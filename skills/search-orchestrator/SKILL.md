@@ -19,18 +19,13 @@ min_cline_version: "3.0.0"
 
 - 用户需要此 Skill 对应的工作场景
 - Cline 已正常运行
-- 已配置 DuckDuckGo MCP server（或等价搜索后端）——见 [references/web-search-setup.md](references/web-search-setup.md)
+- 已配置可提供 `search` / `fetch_content` 两个工具的搜索 MCP server——见 [references/web-search-setup.md](references/web-search-setup.md)
+  - V1 默认推荐：`duckduckgo-websearch`（Node + npx，零追加运行时）
+  - 可替换为任何等价后端，Skill 层不变
 
-## 输入
+## 输入 / 输出
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| 参见 Skill 正文说明 | |
-
-## 输出
-
-- **正常输出**: 参见 Skill 正文说明
-- **错误输出**: 参见 Skill 正文说明
+本 Skill 是工作流方法论，无固定输入输出 schema。具体调用规范参见正文 Phase 1~4。
 
 ## 使用示例
 
