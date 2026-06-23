@@ -242,6 +242,111 @@ Evidence decays. What was true in 2021 may be false in 2026. Score each source f
 
 ---
 
+## Phase 3.5: Domain Goggles（域名级软过滤）
+
+> **来源**：借鉴 Brave Search Goggles 设计——同一搜索引擎在不同 goggle 下结果质量可差 5 倍。本节是 V1 第一项主流 agent 工程手法的提示词级移植。
+>
+> **本质**：MCP 后端不能做的事，让 LLM 在 Evaluate 阶段做后置过滤。Goggle 不是真过滤器，是「LLM 必须遵守的排序规则表」。
+>
+> **使用方式**：每次进入 Phase 2 前，根据 query 主题选 1~2 个 goggle 应用。在 Phase 3.1 评分前，先按 goggle 对结果做 BOOST / DOWNRANK / DISCARD。
+
+### 3.5.1 Goggle 应用流程
+
+```
+Step 1  根据 query 主题，从 §3.5.2 预置 goggle 中选 1~2 个（也可叠加）
+Step 2  Phase 2 搜索结束后，对每条结果按 goggle 规则打标：
+          ✓ BOOST     - 该域名是该 goggle 推荐的高权威源
+          ↓ DOWNRANK  - 该域名内容质量偏低、SEO 农场、转载站
+          ✗ DISCARD   - 直接丢弃（如标题/URL 特征匹配垃圾模式）
+Step 3  Evaluate 阶段优先采纳 BOOST 标记的结果作为证据
+Step 4  在 Phase 4 输出 Sources 表时标注哪些来源经过 goggle 提升
+```
+
+### 3.5.2 预置 Goggles
+
+#### Goggle A：通用技术（general-tech）
+
+> 适用：编程语言、框架、API、命令行工具、开发实践。
+
+| 类别 | 域名 / 特征 | 动作 |
+|------|------------|------|
+| BOOST | `github.com`, `docs.*`, `*.dev`, `developer.*`, `*.io/docs`, `man7.org`, language official sites (`docs.python.org`, `pkg.go.dev`, etc.) | ✓ |
+| BOOST | 维护良好的项目 README、官方 changelog/release notes | ✓ |
+| DOWNRANK | `medium.com`, `dev.to`, `cnblogs.com`（转载多） | ↓ |
+| DOWNRANK | `csdn.net` 上标题含「一文 / 最全 / 神器 / 详解 / 万字」的农场页 | ↓ |
+| DISCARD | `toutiao.com`, `m.toutiao.com`, `baidu.com/bjh`, `360doc.com` | ✗ |
+| DISCARD | 任何标题含「2026 最 / 最 X 的 N 个」的列表农场页 | ✗ |
+
+#### Goggle B：学术 / 论文（academic）
+
+> 适用：研究方法、算法、综述、benchmark、论文引用。
+
+| 类别 | 域名 / 特征 | 动作 |
+|------|------------|------|
+| BOOST | `arxiv.org`, `*.edu`, `*.ac.*`, `openreview.net`, `aclanthology.org`, `papers.nips.cc`, `proceedings.mlr.press` | ✓ |
+| BOOST | `scholar.google.*`, `semanticscholar.org`, `dl.acm.org`, `ieeexplore.ieee.org` | ✓ |
+| DOWNRANK | `medium.com` 上的论文复述（除非作者本人） | ↓ |
+| DOWNRANK | 营销博客对论文的二次转述 | ↓ |
+| DISCARD | 标题含「白话讲」「人话讲」「小白也能懂」的简化版 | ✗ |
+
+#### Goggle C：产品调研（product-research）
+
+> 适用：选型比较、定价、limitation、feature 对照。
+
+| 类别 | 域名 / 特征 | 动作 |
+|------|------------|------|
+| BOOST | 产品官方域名（`<product>.com`、`docs.<product>.*`）、官方 pricing 页 | ✓ |
+| BOOST | 产品官方 changelog、官方对比页（`<product>.com/vs/*`） | ✓ |
+| DOWNRANK | 含 `?ref=` / `?aff=` 的 affiliate 链接 | ↓ |
+| DOWNRANK | "Top N alternatives to X in 2026" 类 SEO 列表 | ↓ |
+| DISCARD | G2 / Capterra 等仅含评分无具体证据的页 | ✗ |
+
+#### Goggle D：安全 / CVE（security）
+
+> 适用：漏洞、补丁、配置加固、合规。
+
+| 类别 | 域名 / 特征 | 动作 |
+|------|------------|------|
+| BOOST | Vendor 官方安全公告（`*.security`, `security.<vendor>.com`） | ✓ |
+| BOOST | `nvd.nist.gov`, `cve.mitre.org`, `cve.org`, `cisa.gov`, OSV 系列 | ✓ |
+| BOOST | 项目官方 GHSA（GitHub Security Advisory） | ✓ |
+| DOWNRANK | 新闻站对 CVE 的二次转述 | ↓ |
+| DISCARD | 安全产品 SEO 软文 | ✗ |
+
+#### Goggle E：中文技术（zh-tech）
+
+> 适用：中文用户搜索中文技术内容时叠加 Goggle A 使用。
+
+| 类别 | 域名 / 特征 | 动作 |
+|------|------------|------|
+| BOOST | `juejin.cn`（掘金，质量相对最稳）、`infoq.cn`、`zhihu.com` 高赞答主、`weixin.qq.com` 官方公众号 | ✓ |
+| BOOST | 各官方中文文档站（`docs.python.org/zh`, `kubernetes.io/zh`, etc.） | ✓ |
+| DOWNRANK | `csdn.net` 个人转载 | ↓ |
+| DOWNRANK | `cnblogs.com` 老旧文章（> 3 年） | ↓ |
+| DISCARD | `toutiao.com`, `360doc.com`, `bjh.baidu.com`, `kuaishou.com/article/*` | ✗ |
+| DISCARD | 标题含「2026 必看 / 收藏即学会 / 让你瞬间」等农场套话 | ✗ |
+
+### 3.5.3 Goggle 的边界（诚实声明）
+
+| 限制 | 含义 |
+|------|------|
+| **不是真过滤器** | LLM 不会调用 URL pattern matcher，只是按规则降低这些来源的可信度权重 |
+| **DISCARD 仍可能进证据** | 若仅剩 DISCARD 类来源，应用 `[来源质量不足]` 标签，而非强行丢弃所有结果 |
+| **预置 goggle 不是金标准** | 用户应根据自身领域自定义；本表只是一组合理默认值 |
+| **冲突时以 §3.3 Source Weighting 为准** | Goggle 是辅助，权威分级是主轴 |
+
+### 3.5.4 Goggle 命中报告（Phase 4 必填）
+
+最终输出的 Sources 表必须增加一列「Goggle Action」：
+
+| Source | Type | Credibility | Goggle Action |
+|--------|------|-------------|---------------|
+| `docs.python.org` | Official docs | [文档] High | ✓ BOOST (general-tech) |
+| `csdn.net/某文章` | Tech blog | [社区] Medium | ↓ DOWNRANK (zh-tech) |
+| `arxiv.org/abs/...` | Paper | [文档] High | ✓ BOOST (academic) |
+
+---
+
 ## Phase 4: Synthesize (Output)
 
 ### 4.1 Structure the Answer

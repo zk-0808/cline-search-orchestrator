@@ -35,6 +35,10 @@
 | 13 | 战略决断不得伪装成待办 | OUTLINE §4.2 | **C** | 不可机制化（但可由 plugin 检测"未来再研究"类待办并提醒） | 永久C类（半机制化辅助） |
 | 14 | 自研 compact 路线已失败 / `compaction_count=0` | memory + task analysis | A→已转向 | 接入 Cline messageBuilder（替代自研） | 实验中（P5） |
 | 15 | 装机/部署任务必须先盘点现状（已装/已配置的工具与配置），再决定是否安装新依赖 | 本次 DDG MCP 装机失误（2026-06-23） | **C** | 不可机制化（治理思考方式）。可由 plugin 半机制化：装机前自动扫 `cline_mcp_settings.json` / PATH / 已知工具，但根治在认知层 | 永久C类（半机制化辅助） |
+| 16 | Output Schema 结构化抽取（Search→Extract→Normalize→Reason） | web-search-capability-survey §9.1 / GPT 评审 | A | search-orchestrator skill v2：每个 sub-question 预声明 schema，LLM 抽完字段再 reason | 候选（V2） |
+| 17 | Highlights / Relevance Compression（fetch 后强制 token 压缩） | 同上 | A | search-orchestrator skill v2：fetch_content 结果不直接进 context，先按 sub-Q 抽 ≤500 token | 候选（V2） |
+| 18 | 重量 multi-agent 编排（Planner/Searcher/Composer） | 同上 / OpenAI Deep Research 借鉴 | A→拒绝 | 走 Cline 原生 subagent；search-orchestrator 不内建 | 候选（不进 V1） |
+| 19 | 同源转载证据去重（Evidence Deduplication） | GPT 评审追加项 | A | search-orchestrator skill v2：Phase 3 增加同源合并步骤 | 候选（V1 P4） |
 
 ---
 

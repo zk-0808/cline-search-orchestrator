@@ -270,3 +270,41 @@
 ## 8. 一句话总结
 
 > 我们的搜索能力差距不在「DDG vs Tavily」，而在「**有没有把商业 agent 的 5~7 个工程动作转译为 skill 提示词层的硬性流程**」。前者要花钱换后端，后者只需要 60 分钟改提示词。
+
+---
+
+## 9. 外部评审反馈与最终优先级（2026-06-23 T3 收敛）
+
+> 本节按 OUTLINE §10 "Preferred Collaboration Pattern" 流程产生：T1（Trae 初版报告）→ T2（外部 GPT 评审）→ T3（合并收敛）。原 §2–§5 不动，本节作为最终决策的覆盖层（override layer）。
+
+### 9.1 接受的评审修正
+
+| 评审点 | 原稿位置 | 调整 |
+|--------|----------|------|
+| **M5 Output Schema 被低估** | §2 M5 / §3 表"⚠️/❌" | 升级为高价值候选，但需要 P1~P4 流程先建立后才动手；进 mechanism-candidates V2 |
+| **M4 highlights 重要性被低估** | §4 启示 5 标"中 ROI" | 实质是 **relevance compression**，不是简单摘要；推迟到 V2 与 Output Schema 一同评估 |
+| **multi-agent 拆分** | §4 启示 6 "拒绝" | 拒绝**重量**多 agent（Planner/Searcher/Composer），但 **轻量 Query Fanout 本就是 P2 的一部分**——评审准确指出这一点 |
+| **Evidence-bound Citation** | §4 启示 2 | 自检模板从行为级升级为**数据结构级**：每个 Finding = `Claim + Quote + URL`，缺一丢弃 |
+| **新增 Evidence Deduplication** | 原稿未涵盖 | 同源转载去重（官方 → 新闻 → 社区 → 聚合），低成本高收益，纳入 P4 |
+| **Tier × Depth Mapping 暂缓** | §4 启示 4 "弱 ROI 但优雅" | 评审准确指出这是"流程可解释性"而非"搜索质量"——降级为暂缓 |
+
+### 9.2 最终落地优先级
+
+| 优先级 | 改造 | 改造形式 | 状态 |
+|--------|------|---------|------|
+| **P1** | Domain Goggles（预置 4~6 个软 goggle） | SKILL.md 新增 §5 Goggles | **本会话即落地（用户选择 C：先试 P1）** |
+| **P2** | Query Rewrite + Fanout（3 路：直白/限域/反证） | SKILL.md §1.4 升级为强制 | 等 P1 A/B 验证后推进 |
+| **P3** | Evidence-bound Citation（Claim/Quote/URL 三元组） | SKILL.md Phase 4 模板改写 | 同上 |
+| **P4** | Evidence Deduplication（同源去重） | SKILL.md Phase 3 加一步 | 同上 |
+| **P5**（V2 候选） | Output Schema（结构化抽取） | 进 mechanism-candidates A 类 | 等 V1 流程跑顺再评估 |
+| **P6**（V2 候选） | Highlights / Relevance Compression | 进 mechanism-candidates A 类 | 同上 |
+| 暂缓 | Tier × Depth Mapping | — | 不进 V1 |
+| 拒绝 | 重量 multi-agent（Planner/Searcher/Composer） | 走 Cline 原生 subagent | 进 mechanism-candidates 备查 |
+
+### 9.3 收敛律检查
+
+按 OUTLINE §10.2 "2 轮收敛节奏"：本次调研走完 T1（产出）→ T2（GPT 评审）→ T3（本节合并），**符合收敛规则**。后续若再有第 4 轮发散，必须按 §9.3 "禁止引入新核心问题"处理。
+
+### 9.4 T2→T3 期间外部评审原文
+
+GPT 评审原文已记录在本次对话 commit 6a37513 之后的会话上下文中，未单独存档为文件——理由：本节已经把所有可执行结论提炼，原文复述会重复信息。如未来需要 audit 评审过程，可从 git 会话日志 / handoff 文件回溯。
