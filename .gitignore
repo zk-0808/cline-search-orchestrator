@@ -1,0 +1,55 @@
+# OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnp.*
+dist/
+build/
+.cache/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# uv / uvx
+.uv/
+
+# Cline runtime artifacts
+.cline/
+.clinerules.local
+handoff/auto-*.md
+
+# Experiments (P5 plugin sandbox lives in its own repo)
+experiments/
+
+# Local env
+.env
+.env.local
+*.local
+
+# Logs
+*.log
+logs/
