@@ -271,95 +271,53 @@
 
 > 我们的搜索能力差距不在「DDG vs Tavily」，而在「**有没有把商业 agent 的 5~7 个工程动作转译为 skill 提示词层的硬性流程**」。前者要花钱换后端，后者只需要 60 分钟改提示词。
 
----
-
-## 9. 外部评审反馈与最终优先级（2026-06-23 T3 收敛）
-
-> 本节按 OUTLINE §10 "Preferred Collaboration Pattern" 流程产生：T1（Trae 初版报告）→ T2（外部 GPT 评审）→ T3（合并收敛）。原 §2–§5 不动，本节作为最终决策的覆盖层（override layer）。
-
-### 9.1 接受的评审修正
-
-| 评审点 | 原稿位置 | 调整 |
-|--------|----------|------|
-| **M5 Output Schema 被低估** | §2 M5 / §3 表"⚠️/❌" | 升级为高价值候选，但需要 P1~P4 流程先建立后才动手；进 mechanism-candidates V2 |
-| **M4 highlights 重要性被低估** | §4 启示 5 标"中 ROI" | 实质是 **relevance compression**，不是简单摘要；推迟到 V2 与 Output Schema 一同评估 |
-| **multi-agent 拆分** | §4 启示 6 "拒绝" | 拒绝**重量**多 agent（Planner/Searcher/Composer），但 **轻量 Query Fanout 本就是 P2 的一部分**——评审准确指出这一点 |
-| **Evidence-bound Citation** | §4 启示 2 | 自检模板从行为级升级为**数据结构级**：每个 Finding = `Claim + Quote + URL`，缺一丢弃 |
-| **新增 Evidence Deduplication** | 原稿未涵盖 | 同源转载去重（官方 → 新闻 → 社区 → 聚合），低成本高收益，纳入 P4 |
-| **Tier × Depth Mapping 暂缓** | §4 启示 4 "弱 ROI 但优雅" | 评审准确指出这是"流程可解释性"而非"搜索质量"——降级为暂缓 |
-
-### 9.2 最终落地优先级
-
-| 优先级 | 改造 | 改造形式 | 状态 |
-|--------|------|---------|------|
-| **P1** | Domain Goggles（预置 4~6 个软 goggle） | SKILL.md 新增 §5 Goggles | **本会话即落地（用户选择 C：先试 P1）** |
-| **P2** | Query Rewrite + Fanout（3 路：直白/限域/反证） | SKILL.md §1.4 升级为强制 | 等 P1 A/B 验证后推进 |
-| **P3** | Evidence-bound Citation（Claim/Quote/URL 三元组） | SKILL.md Phase 4 模板改写 | 同上 |
-| **P4** | Evidence Deduplication（同源去重） | SKILL.md Phase 3 加一步 | 同上 |
-| **P5**（V2 候选） | Output Schema（结构化抽取） | 进 mechanism-candidates A 类 | 等 V1 流程跑顺再评估 |
-| **P6**（V2 候选） | Highlights / Relevance Compression | 进 mechanism-candidates A 类 | 同上 |
-| 暂缓 | Tier × Depth Mapping | — | 不进 V1 |
-| 拒绝 | 重量 multi-agent（Planner/Searcher/Composer） | 走 Cline 原生 subagent | 进 mechanism-candidates 备查 |
-
-### 9.3 收敛律检查
-
-按 OUTLINE §10.2 "2 轮收敛节奏"：本次调研走完 T1（产出）→ T2（GPT 评审）→ T3（本节合并），**符合收敛规则**。后续若再有第 4 轮发散，必须按 §9.3 "禁止引入新核心问题"处理。
-
-### 9.4 T2→T3 期间外部评审原文
-
-GPT 评审原文已记录在本次对话 commit 6a37513 之后的会话上下文中，未单独存档为文件——理由：本节已经把所有可执行结论提炼，原文复述会重复信息。如未来需要 audit 评审过程，可从 git 会话日志 / handoff 文件回溯。
 
 ---
 
-## 10. A/B 验证记录
+## 9. Decision Outcome（决策跳转）
 
-> 评测框架与可贴 prompt 模板见 [skills/search-orchestrator/examples/ab-test-template.md](../skills/search-orchestrator/examples/ab-test-template.md)。
+> 本调研报告的 §1–§8 是事实层（主流 agent 调研、对照、启示）。所有后续决策与 A/B 验证已抽出独立文件。本节只列入口。
 
-### 10.1 Run #1 —— Phase 3.5 Goggle 首轮验证（2026-06-23）
+### 9.1 已落地的决策
 
-| 项 | 内容 |
-|----|------|
-| 改造 | Phase 3.5 Domain Goggles（A general-tech + E zh-tech） |
-| Commit | `19a8953` |
-| Query | `"Kubernetes 滚动更新 ImagePullBackOff 排查方法"`，max_results=10，单次调用 |
-| Run A 农场/转载站数 | 5/10（CSDN×4、lryc.cc×1） |
-| Run B 被 DOWNRANK+DISCARD 数 | 5/10 |
-| **垃圾站清除率** | **5/5 = 100%** |
-| BOOST 命中 | 1/10（kubernetes.io/zh） |
-| 未命中 `—` 状态 | 4/10（imroc.cc、devgex.com、cloudnative-tech.com、jishuzhan.net） |
-| 用户首轮主观评分 | 2/5（错误指标） |
-| 按 ab-test-template §2.4 修正评分 | **4/5** |
-| 决策 | **保留**，推进 P1.5 联动 |
+| 决策 ID | 状态 | 标题 |
+|---------|------|------|
+| [D-2026-06-23-search-adopt-goggles](../decisions/D-2026-06-23-search-adopt-goggles.md) | active | 采纳 Domain Goggles（P1） |
+| [D-2026-06-23-search-finalscore-coupling](../decisions/D-2026-06-23-search-finalscore-coupling.md) | active | Goggle × Source Weighting 联动 FinalScore（P1.5） |
+| [D-2026-06-24-search-rollback-diversity](../decisions/D-2026-06-24-search-rollback-diversity.md) | rolled-back | 回退 DiversityPenalty + R1 保底 |
+| [D-2026-06-24-search-defer-p2](../decisions/D-2026-06-24-search-defer-p2.md) | deferred | 搁置 P2 Query Rewrite + Fanout |
+| [D-2026-06-24-search-adopt-p3](../decisions/D-2026-06-24-search-adopt-p3.md) | active | 采纳 Evidence-bound Citation（P3，三档模式） |
+| [D-2026-06-24-search-adopt-p4-same-source-merge](../decisions/D-2026-06-24-search-adopt-p4-same-source-merge.md) | active | 采纳同源内容合并（P4 Same-Source Merge） |
+| [D-2026-06-24-search-revise-p4-metrics](../decisions/D-2026-06-24-search-revise-p4-metrics.md) | active | 修订 P4 评估指标（域名多样性降级为观察指标） |
+| [D-2026-06-24-search-infra-mcp-upgrade](../decisions/D-2026-06-24-search-infra-mcp-upgrade.md) | **rolled-back** | 启动 MCP 基础设施升级验证（中文 fetch 覆盖率）— Run #8a 否决 TLS 指纹假设 |
+| [D-2026-06-24-search-evaluate-p5-output-schema](../decisions/D-2026-06-24-search-evaluate-p5-output-schema.md) | proposed | 评估 P5 Output Schema（Q1/Q2/Q3 已定义，Run #9 待启动） |
 
-### 10.2 第二轮 GPT 评审与 P1.5 联动
+### 9.2 A/B 实验数据
 
-GPT 二轮评审的核心修正：
+| 实验 | 主题 | 机制分 | 基础设施分 | 结论 |
+|------|------|--------|-----------|------|
+| [run-1-goggle](experiments/run-1-goggle.md) | P1 Goggle 首轮验证 | — | — | 4/5 ✅ 保留 |
+| [run-2-fanout](experiments/run-2-fanout.md) | P2 三路 fanout 首轮 | — | — | 3.6/5 ⚠️ 调参重跑 |
+| [run-3-fanout-tuned](experiments/run-3-fanout-tuned.md) | P2 调参后复测 | — | — | 2.6/5 ❌ 回炉 |
+| [run-4-p3-evidence-bound-citation](experiments/run-4-p3-evidence-bound-citation.md) | P3 首轮（中文 query） | 5/5 机制 | 1/5 基础设施 | 规则可行，fetch 瓶颈 |
+| [run-5-p3-retry](experiments/run-5-p3-retry.md) | P3 复测（英文 query） | 5/5 机制 | 5/5 基础设施 | ✅ 双维度通过 |
+| [run-6-p3-zh-retry](experiments/run-6-p3-zh-retry.md) | P3 复测（中文 query，排除波动） | 5/5 机制 | 1/5 基础设施 | ⚠️ 确认机制零误引用，fetch 层为中文站点稳定瓶颈 |
+| [run-7-p4-dedup](experiments/run-7-p4-dedup.md) | P4 同源内容合并首轮 | — | — | 机制通过：Merge Precision 100%, False Merge 0, Info Loss 0。指标修订见 D-2026-06-24-search-revise-p4-metrics |
+| [run-8a-mcp-backend](experiments/run-8a-mcp-backend.md) | MCP 后端切换验证（Node.js → Python curl_cffi） | — | 1/5 基础设施 | ❌ **TLS 指纹假设 disproven**。Run A/B 双轮 0/10，HTTP Success ≠ Content Success（juejin 全部返回 "Please wait..." JS Challenge 假页面）。回滚动作：MCP 切回 Node.js，中文场景永久 Tier C。新候选 M-22 Browser-backed Fetch |
+| [run-9-p5-output-schema](experiments/run-9-p5-output-schema.md) | P5 Output Schema 首轮验证（单源列表型证据集） | 1/5 设计失败 | — | ❌ **设计失败，非机制失败**。Run A 基线 Claim Coverage 100%、Info Loss 0%——指标天花板已被自由文本顶满，Run B schema 抽取无提升空间。根因：Run #6 单源列表型证据集（1 URL × 4 同源 claim）不触发 P5 核心收益场景（跨源字段对齐）。P5 决策维持 proposed，启动 Run #9b 多实体对比框架重做 |
+| [run-9b-p5-output-schema-v2](experiments/run-9b-p5-output-schema-v2.md) | P5 Output Schema 多实体对比验证（Gin/Echo/Fiber × 5 维度） | 3/5 有条件 | — | ⚠️ **有条件 active（外部评审决策 C）**。Conflict ID +40% 仅方向性信号（非双盲）；Field Alignment 天花板归因 P3 证据集已结构化；Output Length 已排除（纯格式差异）。Run #9c 须双盲 + 非结构化证据集，Conflict ID Δ < +15% 则降回 proposed |
+| [run-9c-p5-output-schema-v3](experiments/run-9c-p5-output-schema-v3.md) | P5 Output Schema 双盲验证（非结构化证据集） | 2/5 | — | ❌ **双盲证伪，降回 proposed**。Conflict ID Δ=-20%（自由文本 100% > schema 80%），Field Alignment Δ=-7%。核心发现：schema 结构可能限制跨维度冲突发现（执行者倾向只报告 schema 内字段间冲突，自由文本叙事流更灵活）。Schema 幻觉=0 护栏有效但不足以挽救机制收益 |
 
-| 评审点 | 调整 |
-|--------|------|
-| BOOST 命中率是错误指标 | ✅ 接受 → ab-test-template §2.3 把"垃圾站清除率"列为主指标，BOOST 命中数降为"参考" |
-| 缺 TRUST SCORE 层 | ✅ 接受 → 新增 SKILL.md §3.5.5 联动小节，FinalScore = SearchRank + GoggleWeight + SourceWeight |
-| 不要手动加 imroc.cc | ✅ 接受 → 让 Source Weighting 把 imroc.cc 自然评为 T2，无需扩 Goggle |
-| 评测框架是真正资产 | ✅ 接受 → 固化为 examples/ab-test-template.md |
+### 9.3 最终路线状态
 
-### 10.3 联动后的预期效果（基于 Run #1 数据回算）
+- P1 Domain Goggles：active
+- P1.5 FinalScore 联动：active
+- P2 Query Rewrite + Fanout：**deferred**（D-2026-06-24-search-defer-p2）
+- **P3 Evidence-bound Citation：active（三档模式，D-2026-06-24-search-adopt-p3）**
+- **P4 Evidence Deduplication：active（同源内容合并，D-2026-06-24-search-adopt-p4-same-source-merge）**
+- P5 / P6（V2）：候选
+- **P5 Output Schema**：**proposed**（D-2026-06-24-search-evaluate-p5-output-schema）— Run #9 1/5 设计失败，Run #9b 3/5 有条件（非双盲 +40% 方向性信号），Run #9c 2/5 双盲证伪（Conflict ID Δ=-20%，自由文本反超 schema）。降回 proposed 触发条件已满足。核心教训：schema 结构可能限制跨维度冲突发现；非双盲偏差严重高估机制收益
+  - P6 Highlights / Relevance Compression：候选（mechanism-candidates #17）
+- **Infra（MCP 后端升级）**：**rolled-back**（D-2026-06-24-search-infra-mcp-upgrade）— Run #8a 否决 TLS 指纹假设；中文场景永久 Tier C；新候选 M-22 Browser-backed Fetch 状态：**候选（暂缓）**，触发条件为 Tier C 被证明严重影响答案质量
 
-按 SKILL.md §3.5.5 FinalScore 公式回算 Run #1 的 10 条结果：
-
-| URL | SearchRank | GoggleWeight | SourceWeight | FinalScore |
-|-----|-----------:|-------------:|-------------:|-----------:|
-| kubernetes.io/zh/... | -8 | +2 | +10 (T1) | **+4** ⬆⬆ |
-| imroc.cc/... | -10 | 0 | +3 (T2) | **-7** ⬆ |
-| cloudnative-tech.com/... | -5 | 0 | +1 (T3) | **-4** |
-| devgex.com/... | -6 | 0 | +1 (T3) | **-5** |
-| jishuzhan.net/... | -9 | 0 | +1 (T3) | **-8** |
-| blog.csdn.net (×2) | -1, -2 | -1, -1 | +0.1 (T4) | **-1.9 / -2.9** ⬇ |
-| wenku.csdn.net (×2) | -3, -4 | -1, -1 | +0.1 (T4) | **-3.9 / -4.9** ⬇ |
-| lryc.cc/news/... | -7 | -∞ | — | **-∞** ⛔ |
-
-**重排后预期 Top 5**：kubernetes.io / imroc.cc / cloudnative-tech / devgex / blog.csdn[1]。
-**Top-5 T1+T2 变化**：Run A 原始 = 0，Run B(Goggle only) = 1，**Run B(Goggle + SourceWeight) = 2**——通过联动让 imroc.cc 自然升上来，是不扩白名单的最佳证明。
-
-### 10.4 下一次验证
-
-下一项跑 A/B 应是 **P2 Query Rewrite + Fanout**。模板已就位。
+详见各决策文件 + [search-orchestrator/README.md](README.md)。

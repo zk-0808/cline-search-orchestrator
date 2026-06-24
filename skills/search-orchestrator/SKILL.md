@@ -121,38 +121,130 @@ Q2 Hypothesis: Rust web frameworks (Actix, Axum) are mature enough for productio
 Q3 Hypothesis: Rust developers are scarce and expensive [unverified]
 ```
 
-### 1.4 Design Search Paths
+### 1.4 Query Rewrite + Fanout（建议 3 路改写）
 
-For each sub-question, design 2-4 specific search queries. Prioritize by expected information gain.
+> **背景**：第二轮调研（[D-2026-06-23-search-adopt-goggles](../../docs/decisions/D-2026-06-23-search-adopt-goggles.md) 同期评审，参见 survey §4 启示 3）指出，主流 agent（Tavily auto_parameters / Azure Semantic Rewrite / Agent4Ranking）都把 query 改写视为搜索阶段的核心动作。本节把"人工写 2-4 条 query"升级为**结构化的 3 路 fanout**：直白 / 限域 / 反证。
+>
+> **目标**：让每个 sub-question 产生 3 条**视角不同**的 query 并行执行，合并去重后再交给 §3.5 / §3.5.5 处理。
+>
+> **触发条件**：L2 建议三路；L3 建议三路并可增加反证扩展（见 §1.4.4）；L1 可只用 R1；L0 不适用。
+>
+> **执行强度（Run #2/#3 之后的诚实定位）**：本节是"软要求"——三路 fanout 在多样性与反证覆盖上**确有边际收益**，但 A/B 实测显示提示词层无法把多样性/反垄断/反证召回率**保证到达标线**（详见 [D-2026-06-24-search-defer-p2](../../docs/decisions/D-2026-06-24-search-defer-p2.md) 与 [D-2026-06-24-search-rollback-diversity](../../docs/decisions/D-2026-06-24-search-rollback-diversity.md)）。LLM 应当尽力执行三路，并在 Phase 4 显式说明每路的可达性与不足。
 
-| Sub-Q | Search Query | Expected Gain | Priority |
-|-------|-------------|--------------|----------|
-| Q1 | "Rust vs Python backend performance benchmark 2025" | High (hard data) | 1 |
-| Q1 | "Rust web service latency production" | Medium | 2 |
+#### 1.4.1 三路 fanout 模板
 
-See [references/search-path-design.md](references/search-path-design.md) for query design patterns.
+对每个 sub-question，**必须**产出且仅产出以下 3 条 query 变体（L1 可省 R2）：
 
-### 1.5 Counter-Evidence Search (Mandatory for L2+)
+| 路 | 命名 | 模板 | 目的 |
+|----|------|------|------|
+| **R1** | 直白型（direct） | `<用户原话或最自然的中文/英文短句>` | 探测大众认知与高排名结果，建立基线 |
+| **R2** | 限域型（site-restricted） | `<关键词> (site:<T1/T2 域> OR …)` — 至少 3 个 site:（详见 §1.4.2） | 强制命中权威源，避开转载与农场 |
+| **R3** | 反证型（counter-evidence） | `<主张> 反例 / 失败 / 迁回 / regression / "migrated from X to Y"` | 主动寻找反对意见与失败案例，破除确认偏误 |
 
-For each core hypothesis, design **at least one reverse search** aimed at disproving it. Confirmation bias is the single largest source of research error — the only defense is actively seeking disconfirming evidence.
+最小示例：
 
 ```
-Hypothesis: "Rust has better performance than Java"
-  → Reverse query: "Rust slower than Java production benchmark"
-  → Reverse query: "Rust performance regression real world"
-  → Reverse query: "cases where Rust underperformed Java"
+Sub-Q: "Rust 微服务后端是否比 Go 更合适"
 
-Hypothesis: "React is the best choice for our dashboard"
-  → Reverse query: "why not React for dashboard"
-  → Reverse query: "React alternative dashboard performance"
-  → Reverse query: "teams that moved away from React and why"
+R1（直白）: Rust vs Go 微服务后端 选型
+R2（限域）: Rust Go microservice production (site:reddit.com OR site:news.ycombinator.com OR site:github.com)
+R3（反证）: "migrated from Rust to Go" OR "Rust microservice regression" OR "Rust 微服务 翻车"
 ```
 
-**Rule:** If you cannot find evidence against a hypothesis, note that too — but don't treat absence of counter-evidence as proof. Mark it: `[未找到反证]` (no counter-evidence found).
+#### 1.4.2 限域型 R2 的域名挑选规则
 
-### 1.6 Execute as Batch, Not Sequentially
+R2 的 `site:` 列表建议从以下两类中选 **3~5 个**（不少于 3，避免被单一生态垄断）。
+
+> **Run #3 教训（2026-06-24）**：site: 是**过滤器不是路由器**——把中文域名（zhihu/tonybai）加进 site: 不会让英文 query 自动返回中文页。多语种结果**必须由多语种 query 触发**。所以 R2 在单一语言 query 下，site: 列表应保持同语种生态；若用户希望覆盖另一语种权威源，请按下面 §1.4.2.bis 把 R2 分子路。
+
+| 类别 | 候选 | 选择依据 |
+|------|------|---------|
+| **T1 官方权威** | 该领域官方文档 / 标准组织 / RFC / vendor advisory（如 `rust-lang.org`、`kubernetes.io`、`postgresql.org`） | 见 §3.3 T1 定义 |
+| **T2 半权威（英文社区）** | `news.ycombinator.com`、`reddit.com`、`stackoverflow.com`、主流项目 GitHub README、`*.acm.org`、`arxiv.org`（看主题） | 见 §3.3 T2 定义 |
+| **T2 半权威（中文社区）** | `zhuanlan.zhihu.com`、`tonybai.com`、`infoq.cn`、`juejin.cn`、官方中文文档站（`docs.python.org/zh` 等） | 同上 |
+
+**禁止**：把 `csdn.net`、`medium.com`、`toutiao.com` 这类已在 §3.5 被 DOWNRANK / DISCARD 的域名写进 R2 的 `site:` 列表——会与 Goggle 自相矛盾。
+
+##### 1.4.2.bis R2 的双语子路（可选，当需要双语覆盖时启用）
+
+当 query 主题在两个语种社区都有重要权威源时（如 Rust/Go/K8s 等中英都活跃的主题），R2 可拆分为两个**同主题、不同语种**的子路：
+
+```
+R2-EN: <英文关键词> (site:<英文 T1/T2 域> OR …)
+R2-CN: <中文关键词> (site:<中文 T2 域> OR …)
+```
+
+两子路并行 dispatch、按 URL 去重后并入 R2 池参与排序。不强制启用——单语种主题维持单 R2 即可。
+
+#### 1.4.3 反证型 R3 的话术模式
+
+R3 不是"换一个同义词"，而是**主动假设**：「如果当前假设是错的，谁会写下反例？」常用模式：
+
+```
+"X slower than Y production benchmark"
+"X performance regression"
+"cases where X underperformed Y"
+"why not X" / "X alternative"
+"teams that moved away from X and why"
+"migrating from X to Y" / "X 翻车" / "X 踩坑"
+```
+
+**规则**：若 R3 返回 0 条反证，**不要**视为"没有反证"——标记 `[未找到反证]`，并在 Round 2 用更宽泛的反证 query 重试一次（最多 1 次）。
+
+> **Run #3 教训（2026-06-24）**：DDG 后端对负向 query 召回较差，复合 `OR` 反证 query 可能被屏蔽返回空；简化 retry 也可能返回偏正面内容。**这是后端能力限制，不是提示词能根治**——属"反证检索机制"缺口，已记入 mechanism-candidates #20。当出现这种情况：① 仍标 `[未找到反证]`；② Phase 4 显式列出"R3 反证不可达 → 结论置信度降一档"；③ 不在 SKILL 层再加补救逻辑。
+
+#### 1.4.4 L3 扩展：额外反证（仅 L3）
+
+L3 深度调研在三元组基础上**追加 1~2 条反证 query**，针对最核心、最高风险的 1~2 个假设进行多角度反向搜索。L2 不强制扩展，避免无限发散。
+
+#### 1.4.5 并行执行与合并
+
+```
+Step 1  对每个 sub-question 产出 R1/R2/R3 三条 query
+Step 2  全部 sub-question 的所有 query 在一条 message 内并行 dispatch（不串行、不 && 链）
+Step 3  按 URL 精确去重；合并后期望规模 ≈ 3 × N_subQ × max_results
+Step 3.bis  同源内容合并（P4）—— 对去重后的结果集，判断是否有同一篇文章被不同站点转载/镜像。
+              若判断为同源转载，只保留权威分级最高的版本（T1 > T2 > T3 > T4；同级保留 SearchRank 更高的）。
+              被合并的 URL 在 Source 表中标注 [同源合并]。
+              详见 [D-2026-06-24-search-adopt-p4-same-source-merge](../../docs/decisions/D-2026-06-24-search-adopt-p4-same-source-merge.md)。
+Step 4  把合并集交给 §3.5（Goggle 打标）→ §3.5.5（FinalScore 重排）→ §3.1（充分性评分）
+```
+
+#### 1.4.6 输出表（替代旧 §1.4 表格）
+
+| Sub-Q | Route | Query | 预期信息增益 | 期望主要来源类型 |
+|-------|-------|-------|--------------|------------------|
+| Q1 | R1 | "Rust vs Python backend performance benchmark 2025" | High | T2 社区 + T3 博客 |
+| Q1 | R2 | "Rust Python benchmark" site:rust-lang.org OR site:github.com | High | T1 官方 |
+| Q1 | R3 | "Rust slower than Python production case" | Medium | T3 真实事故贴 |
+
+更多 query 词法模式见 [references/search-path-design.md](references/search-path-design.md)。
+
+#### 1.4.7 合并流程（按 §3.5.5 单一通路）
+
+> **Run #3 之后回退（2026-06-24）**：取消"DiversityPenalty + R1 保底"提示词级算分。合并阶段只走 §3.5.5 FinalScore 单一通路，不再加多样性项。
+>
+> 多样性 / 反垄断 / 路径配额属机制层问题（见 mechanism-candidates #21），SKILL 层不再尝试治理。
+
+执行顺序：
+
+```
+Step 1  收集所有路（R1/R2/R3 含其 retry 分支）的原始结果，按 URL 精确去重
+Step 2  对每条结果调用 §3.5.2 Goggle 打标
+Step 3  对每条结果按 §3.3 评出 T-Level
+Step 4  按 §3.5.5 FinalScore 公式排序（SearchRank + GoggleWeight + SourceWeight）
+Step 5  输出 top-10，进入 §3.1 充分性评分
+```
+
+**对单一路径垄断 top-N 的现状**：承认局限。Phase 4 Sources 表中显式列出"来源路"列，让人类用户自行识别是否需要调整 R2 site: 列表或拆双语子路（§1.4.2.bis）。
+
+### 1.5 Execute as Batch, Not Sequentially
 
 Issue independent search queries in **parallel** (single message with multiple tool calls), not chained with `&&`. Independent queries don't need to wait for each other.
+
+§1.4 的 3 路 fanout 与跨 sub-question 的 query 都属"独立 query"——一次性发出。
+
+> **注**：旧 §1.5 "Counter-Evidence Search (Mandatory for L2+)" 已并入 §1.4.3 / §1.4.4。反证不再是独立步骤，而是 §1.4 三元组的**第三路硬性输出**。
 
 ---
 
@@ -388,7 +480,7 @@ FinalScore(result) = SearchRank + GoggleWeight + SourceWeight
 2. 评估 Source Authority 得到 SourceWeight（必须显式给出 T 级）
 3. 按 FinalScore 重排
 4. 若 FinalScore 出现并列，按原 SearchRank 决定
-5. 在 Phase 4 输出中，Sources 表新增 "T-Level" 列（与 Goggle Action 并列）
+5. 在 Phase 4 输出中，Sources 表新增 "T-Level"（与 Goggle Action 并列）；若结果来自 §1.4 fanout，额外加 "来源路" 列
 ```
 
 #### 设计护栏（避免膨胀）
@@ -398,7 +490,9 @@ FinalScore(result) = SearchRank + GoggleWeight + SourceWeight
 | 不为每个新发现的优质站补 BOOST 白名单 | 防止「200 域名白名单」陷阱（GPT 2026-06-23 评审第二轮指出） |
 | 优先用 Source Weighting 提升新站，而不是 Goggle | Goggle 是**类别级粗筛**，Source Weighting 才是**站点级精筛** |
 | Goggle 仅覆盖**高频垃圾域** + **少数普世权威域**（github/docs/arxiv） | 长尾交给 Source Weighting |
-| 不引入实际数值计算 / 排序代码 | 保持「提示词级」轻量本质，不增加新依赖 |
+| **不在提示词层引入多样性/反垄断算分**（如 DiversityPenalty） | Run #3（2026-06-24）证实：LLM 在提示词层算分不可靠，且 ±2 量级压不过 T1 SourceWeight ±10。多样性排序属机制层问题，见 mechanism-candidates #21 |
+
+> **Run #3 教训**：曾尝试新增 §3.5.6 DiversityPenalty + R1 保底来缓解 fanout 单一路垄断，复测综合 2.6/5，倒退。**回退** —— 多样性约束移交机制层（见 mechanism-candidates #21），SKILL 层不再算分。详见实验报告 [run-3-fanout-tuned](../../docs/search-orchestrator/experiments/run-3-fanout-tuned.md) 与决策 [D-2026-06-24-search-rollback-diversity](../../docs/decisions/D-2026-06-24-search-rollback-diversity.md) / [D-2026-06-24-search-defer-p2](../../docs/decisions/D-2026-06-24-search-defer-p2.md)。
 
 ---
 
@@ -445,7 +539,61 @@ Follow `.clinerules` 宪法一 evidence labeling:
 
 Credibility order: 实测 > 源码 > 文档 > 社区 > 推测
 
-### 4.3 Mark Uncertainty Explicitly
+### 4.3 Output-Citation-Enforce（三档模式）
+
+> **来源**：借鉴 Perplexity Sonar Pro 架构强制 citation 的设计——"product architecture forces citation discipline"（survey §2 M8）。Perplexity 的 citation hallucination rate 37% vs ChatGPT 67%，差距核心在于架构强制而非模型自觉。
+>
+> **A/B 验证**：Run #5（英文 query，fetch 5/5，误引用 0）+ Run #6（中文 query，fetch 1/10，误引用 0）共同确认 P3 机制零误引用。详见 [D-2026-06-24-search-adopt-p3](../../docs/decisions/D-2026-06-24-search-adopt-p3.md)。
+
+#### 档位判定
+
+`fetch_content` 执行后，统计候选 URL 中成功获取正文的比例。根据结果选择输出档位：
+
+| 档位 | fetch 成功率 | 输出格式 |
+|------|-------------|---------|
+| **Tier A** | ≥ 60% | 完整 P3：Claim / Quote / Source 三元组 |
+| **Tier B** | 20%~60% | 混合：有正文 → P3；无正文 → `[无法引证]` |
+| **Tier C** | < 20% | 降级：Finding + Source + `[P3 Coverage Low]`，保留已验证证据 |
+
+#### Tier A：完整 P3
+
+```
+### [Sub-Q]
+- **Claim**: [一句话结论，必须有正文依据]
+  **Quote**: "[来源文中的 verbatim 连续子串，≤ 80 字]"
+  **Source**: [URL, 证据标签]
+```
+
+规则：
+- Quote **必须**是 fetch_content 返回正文中的连续子串。禁止拼接、禁止删改词序。
+- 每条 Claim 必须有独立 Quote 支持。一个 URL 可产出一条或多条 Claim。
+- 找不到合适 Quote → 不生成该 Claim，标记 `[无法引证]`。
+
+#### Tier B：混合模式
+
+对成功 fetch 的 URL：使用 Tier A 格式。
+对 fetch 失败的 URL：不生成 Claim，在 Sources 表中标记 `[无法引证]` 并说明原因。
+
+最终合成回答仅包含已验证条目。`[无法引证]` 的 URL 不进入应答体，保留在 Sources 表供后续参考。
+
+#### Tier C：降级模式
+
+使用当前 §4.1 格式（Finding + Source），但做两件事：
+1. 如果某 URL 成功 fetch 且有 verbatim Quote 可用，优先以 P3 格式输出
+2. 在所有 Sources 表末尾追加一行 `[P3 Coverage Low]` 说明
+
+降级不是回退到旧格式——它是**在基础设施不允许时保留已验证证据**。
+
+#### 自检（所有档位通用）
+
+```
+- 每条 claim 是否关联至少一个 URL？    □ Yes / □ No
+- [推测] 标签数 ≤ 总结论数 30%？       □ Yes / □ No
+- 如果 Tier A/B：每条 claim 是否有 Quote？  □ Yes / □ No
+- 如果 Tier C：[P3 Coverage Low] 是否标注？  □ Yes / □ No
+```
+
+### 4.4 Mark Uncertainty Explicitly
 
 Never present a guess as fact. Use explicit markers:
 - `[未验证]` for unverified claims

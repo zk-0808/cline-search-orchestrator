@@ -44,6 +44,7 @@ handoff/auto-*.md
 
 # Experiments (P5 plugin sandbox lives in its own repo)
 experiments/
+!docs/search-orchestrator/experiments/
 
 # Local env
 .env

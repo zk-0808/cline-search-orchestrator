@@ -35,10 +35,14 @@
 | 13 | 战略决断不得伪装成待办 | OUTLINE §4.2 | **C** | 不可机制化（但可由 plugin 检测"未来再研究"类待办并提醒） | 永久C类（半机制化辅助） |
 | 14 | 自研 compact 路线已失败 / `compaction_count=0` | memory + task analysis | A→已转向 | 接入 Cline messageBuilder（替代自研） | 实验中（P5） |
 | 15 | 装机/部署任务必须先盘点现状（已装/已配置的工具与配置），再决定是否安装新依赖 | 本次 DDG MCP 装机失误（2026-06-23） | **C** | 不可机制化（治理思考方式）。可由 plugin 半机制化：装机前自动扫 `cline_mcp_settings.json` / PATH / 已知工具，但根治在认知层 | 永久C类（半机制化辅助） |
-| 16 | Output Schema 结构化抽取（Search→Extract→Normalize→Reason） | web-search-capability-survey §9.1 / GPT 评审 | A | search-orchestrator skill v2：每个 sub-question 预声明 schema，LLM 抽完字段再 reason | 候选（V2） |
-| 17 | Highlights / Relevance Compression（fetch 后强制 token 压缩） | 同上 | A | search-orchestrator skill v2：fetch_content 结果不直接进 context，先按 sub-Q 抽 ≤500 token | 候选（V2） |
+| 16 | Output Schema 结构化抽取（Search→Extract→Normalize→Reason） | search-orchestrator/survey.md §9 + decisions/D-2026-06-24-search-evaluate-p5-output-schema.md（proposed）+ experiments/run-9b-p5-output-schema-v2.md（3/5 有条件）+ run-9b-external-review.md（外部评审决策 C）+ run-9c-p5-output-schema-v3.md（2/5 双盲证伪） | A | search-orchestrator skill v2：每个 sub-question 预声明 schema，LLM 抽完字段再 reason | **候选** — Run #9c 2/5 双盲证伪：Conflict ID Δ=-20%（自由文本反超 schema），Field Alignment Δ=-7%。降回 proposed 触发条件已满足。核心发现：schema 结构可能限制跨维度冲突发现 |
+| 17 | Highlights / Relevance Compression（fetch 后强制 token 压缩） | search-orchestrator/survey.md §9.3 P6 行 | A | search-orchestrator skill v2：fetch_content 结果不直接进 context，先按 sub-Q 抽 ≤500 token | 候选（V2 P6） |
 | 18 | 重量 multi-agent 编排（Planner/Searcher/Composer） | 同上 / OpenAI Deep Research 借鉴 | A→拒绝 | 走 Cline 原生 subagent；search-orchestrator 不内建 | 候选（不进 V1） |
-| 19 | 同源转载证据去重（Evidence Deduplication） | GPT 评审追加项 | A | search-orchestrator skill v2：Phase 3 增加同源合并步骤 | 候选（V1 P4） |
+| 19 | 同源转载证据去重（Evidence Deduplication） | decisions/D-2026-06-24-search-adopt-p4-same-source-merge.md（active）+ experiments/run-7-p4-dedup.md | A | 已落地为 P4 Same-source Merge：Phase 3 同源合并步骤；指标修订见 D-2026-06-24-search-revise-p4-metrics | **已机制化** |
+| 20 | 反证检索（counter-evidence search）—— DDG/通用 search 后端对负向 query 召回差，复合 OR 易被屏蔽 | search-orchestrator §1.4.3 + experiments/run-3-fanout-tuned.md 决策「根因 #3」+ decisions/D-2026-06-24-search-defer-p2.md（deferred）| A | 反证专用检索机制：分拆负向短语单发、引入 contrarian intent classifier、或换支持否定召回的后端（Tavily/Exa）| 候选（P2 失败遗产） |
+| 21 | 多样性排序（DiversityPenalty / R1 保底 / 单一路 entry cap） | search-orchestrator §3.5.5/§3.5.6 + experiments/run-3-fanout-tuned.md 决策「根因 #2」+ decisions/D-2026-06-24-search-defer-p2.md（deferred）| A | 排序后处理代码：合并阶段做真正的数值排序与配额约束，而非依赖 LLM 算分。提示词级算分量级失衡且 LLM 不可靠 | 候选（P2 失败遗产） |
+| 22 | Browser-backed Fetch（穿透 Cloudflare JS Challenge） | search-orchestrator/experiments/run-8a-mcp-backend.md（否决 TLS 假设）+ decisions/D-2026-06-24-search-infra-mcp-upgrade.md（rolled-back）| A | Playwright / Headless Chromium MCP：能执行 JS 取 challenge cookie，是当前观测到的中文 fetch 失败模式（juejin "Please wait..." HTTP 200 假页面）的唯一对路径方案。代价高（重、慢、资源高）| 候选（暂缓）— 触发条件：Tier C snippet-only 被证明严重影响答案质量；否则不启动 |
+| 23 | TRAE agent 与 Cline SKILL 执行边界混淆 | session_memory 2026-06-24/25 两次记录 + docs/project-rules.md §约束 5 | **C** | 不可机制化（治理思考方式）。半机制化辅助：① project-rules.md §约束 5 已落地为防漂移约束；② 实验框架模板（run-N-*.md）必须声明各 Phase 的 designated_executor（Cline / TRAE agent / 用户手动） | 永久C类（半机制化辅助） |
 
 ---
 
