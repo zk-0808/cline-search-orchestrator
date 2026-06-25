@@ -290,7 +290,8 @@
 | [D-2026-06-24-search-adopt-p4-same-source-merge](../decisions/D-2026-06-24-search-adopt-p4-same-source-merge.md) | active | 采纳同源内容合并（P4 Same-Source Merge） |
 | [D-2026-06-24-search-revise-p4-metrics](../decisions/D-2026-06-24-search-revise-p4-metrics.md) | active | 修订 P4 评估指标（域名多样性降级为观察指标） |
 | [D-2026-06-24-search-infra-mcp-upgrade](../decisions/D-2026-06-24-search-infra-mcp-upgrade.md) | **rolled-back** | 启动 MCP 基础设施升级验证（中文 fetch 覆盖率）— Run #8a 否决 TLS 指纹假设 |
-| [D-2026-06-24-search-evaluate-p5-output-schema](../decisions/D-2026-06-24-search-evaluate-p5-output-schema.md) | proposed | 评估 P5 Output Schema（Q1/Q2/Q3 已定义，Run #9 待启动） |
+| [D-2026-06-24-search-evaluate-p5-output-schema](../decisions/D-2026-06-24-search-evaluate-p5-output-schema.md) | superseded | 评估 P5 Output Schema v1（字段对齐 schema）— Run #9c 双盲证伪后被 Evidence Map / Claim Graph 重设计取代 |
+| [D-2026-06-25-search-redesign-p5-evidence-map](../decisions/D-2026-06-25-search-redesign-p5-evidence-map.md) | proposed | 重设计 P5：Evidence Map / Claim Graph（非字段对齐 schema）— Run #13 2/5 双盲证伪，保持 proposed |
 | [D-2026-06-25-search-adopt-p6-highlights](../decisions/D-2026-06-25-search-adopt-p6-highlights.md) | active | 采纳 P6 Highlights（fetch 后 verbatim 抽取 ≤500 token） |
 
 ### 9.2 A/B 实验数据
@@ -311,6 +312,7 @@
 | [run-10-p6-highlights](experiments/run-10-p6-highlights.md) | P6 Highlights verbatim 抽取保真度验证（PostgreSQL 17 vs MySQL 8.4） | 4/5 | — | ✅ **P6 升级 active**。Extractive Fidelity 92.3%（24/26），Paraphrase 7.7%（2/26），Untraceable 0。两条 paraphrase 模式：主语同义替换 + 跨语言归纳。提示词层 verbatim 抽取指令基本有效。SKILL 加载机制修复（symlink）后首条 P 级机制通过验证 |
 | [run-11-p4-semantic-merge](experiments/run-11-p4-semantic-merge.md) | P4 语义场景去重增益验证（LLM vs SimHash/Jaccard 基线，K8s sidecar 跨语言） | 4/5 | — | ✅ **P4 语义场景已验证（translation 子类）**。Baseline：P=1.00, R=0.20, F1=0.33（高精度低召回，FP=0）。P4 LLM：P=1.00, R=1.00, F1=1.00。Net Gain（Recall 差）+0.80。3 个 translation 对全部正确合并。Baseline translation Miss 属算法边界（lexical 不具备跨语言能力，文献一致）；3-8 verbatim Miss 属数据限制（仅摘要非全文，摘要级指纹≠文档级指纹）。降级 4/5：样本量仅 3 对（全部 translation），Net Gain +0.80 为上界估计（摘要限制低估 baseline verbatim 能力） |
 | [run-12-p4-summary-rewrite](experiments/run-12-p4-summary-rewrite.md) | P4 summary/rewrite 子类补评测（Next.js 15 async request APIs） | 5/5 | — | ✅ **P4 semantic-summary / semantic-rewrite 子类验证通过**。Run #12 初次 Python 3.13 Attempt 为 N/A（样本不足 + 全文归档不合格）；Run #12b 严格重跑后通过：GT positive=5（summary 3、rewrite 2），Baseline SimHash/Jaccard：P=1.00, R=0.00, F1=0.00；P4 LLM：P=1.00, R=1.00, F1=1.00；Net Gain +1.00；False Merge=0；Info Loss=0。P4 语义合并证据范围从 translation 扩展到 summary/rewrite |
+| [run-13-p5-evidence-map](experiments/run-13-p5-evidence-map.md) | P5 v2 Evidence Map / Claim Graph 双盲验证（Gateway API，非结构化证据集） | 2/5 | — | ❌ **保持 proposed**。Material Relation Recall：Run A 15/16=93.8%，Run B 16/16=100%，Δ=+6.3% < +15%。Cross-Dimension Recall 双方 12/12 天花板，Δ=0。安全指标（False Conflict / Unsupported Relation / Info Loss）双方均为 0。结构化中间表示再次未对自由文本展现决定性优势。唯一可复现增量：Gap Ledger 强制枚举证据缺口（捕获 Run A 漏掉的回滚 gap GT15）。衍生候选：后续应只验证“追加 Gap Ledger / 证据缺口枚举”最小机制，而非完整 Evidence Map |
 
 ### 9.3 最终路线状态
 
@@ -320,7 +322,7 @@
 - **P3 Evidence-bound Citation：active（三档模式，D-2026-06-24-search-adopt-p3）**
 - **P4 Evidence Deduplication：active（同源内容合并，D-2026-06-24-search-adopt-p4-same-source-merge）** — Run #7 逐字场景 Merge Precision 100%；Run #11 translation 子类 4/5（Baseline P=1.00/R=0.20/F1=0.33，P4 LLM P=1.00/R=1.00/F1=1.00，Net Gain +0.80）；Run #12b summary/rewrite 子类 5/5（GT positive=5：summary 3、rewrite 2；Baseline P=1.00/R=0.00/F1=0.00，P4 LLM P=1.00/R=1.00/F1=1.00，Net Gain +1.00，False Merge=0，Info Loss=0）。P4 证据范围已覆盖逐字、translation、summary、rewrite；后续只在出现 false merge / 信息损失案例时再复评
 - P5 / P6（V2）：候选
-- **P5 Output Schema**：**proposed**（D-2026-06-24-search-evaluate-p5-output-schema）— Run #9 1/5 设计失败，Run #9b 3/5 有条件（非双盲 +40% 方向性信号），Run #9c 2/5 双盲证伪（Conflict ID Δ=-20%，自由文本反超 schema）。降回 proposed 触发条件已满足。核心教训：schema 结构可能限制跨维度冲突发现；非双盲偏差严重高估机制收益
+- **P5 Output Schema / Evidence Map**：**proposed**（D-2026-06-25-search-redesign-p5-evidence-map；supersedes D-2026-06-24-search-evaluate-p5-output-schema）— Run #9 1/5 设计失败，Run #9b 3/5 有条件，Run #9c 2/5 双盲证伪字段对齐 schema，Run #13 2/5 双盲证伪 Evidence Map / Claim Graph（Material Relation Recall Δ=+6.3% < +15%，Cross-Dimension 双方 12/12 天花板，安全指标全 0）。两代结构化中间表示均未对自由文本展现决定性优势。唯一可复现增量：Gap Ledger 强制枚举证据缺口。后续若再评估 P5，只验证“追加 Gap Ledger / 证据缺口枚举”最小机制，不再做完整 Evidence Map
 - **P6 Highlights / Relevance Compression：active**（D-2026-06-25-search-adopt-p6-highlights）— Run #10 4/5：Extractive Fidelity 92.3%，Paraphrase 7.7%，Untraceable 0。提示词层 verbatim 抽取指令基本有效。两条 paraphrase 模式：主语同义替换 + 跨语言归纳
 - **Infra（MCP 后端升级）**：**rolled-back**（D-2026-06-24-search-infra-mcp-upgrade）— Run #8a 否决 TLS 指纹假设；中文场景永久 Tier C；新候选 M-22 Browser-backed Fetch 状态：**候选（暂缓）**，触发条件为 Tier C 被证明严重影响答案质量
 

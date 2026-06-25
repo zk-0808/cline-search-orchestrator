@@ -2,7 +2,7 @@
 
 `search-orchestrator` skill 的所有产物入口。SKILL 本身位于 [`../../skills/search-orchestrator/SKILL.md`](../../skills/search-orchestrator/SKILL.md)。
 
-## 当前状态（2026-06-24）
+## 当前状态（2026-06-25）
 
 | 路线项 | 状态 | 决策 |
 |--------|------|------|
@@ -12,8 +12,8 @@
 | DiversityPenalty + R1 保底 | ⛔ rolled-back | [D-2026-06-24-search-rollback-diversity](../decisions/D-2026-06-24-search-rollback-diversity.md) |
 | P3 Evidence-bound Citation | ✅ active（三档模式）| [D-2026-06-24-search-adopt-p3](../decisions/D-2026-06-24-search-adopt-p3.md) |
 | P4 Evidence Deduplication | ✅ active（同源内容合并）| [D-2026-06-24-search-adopt-p4-same-source-merge](../decisions/D-2026-06-24-search-adopt-p4-same-source-merge.md) |
-| P5 Output Schema（V2） | ⬜ 候选 | mechanism-candidates #16 |
-| P6 Highlights（V2） | ⬜ 候选 | mechanism-candidates #17 |
+| P5 Output Schema / Evidence Map | ⬜ proposed | [D-2026-06-25-search-redesign-p5-evidence-map](../decisions/D-2026-06-25-search-redesign-p5-evidence-map.md) |
+| P6 Highlights / Relevance Compression | ✅ active | [D-2026-06-25-search-adopt-p6-highlights](../decisions/D-2026-06-25-search-adopt-p6-highlights.md) |
 
 ## 文档导航
 

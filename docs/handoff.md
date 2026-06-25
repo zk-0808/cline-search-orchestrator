@@ -1,58 +1,42 @@
-# Handoff — Run #12b P4 summary/rewrite 补评测完成
+# Handoff — Run #14 P5 Gap Ledger 最小机制框架建立 + Phase 0b 采集受阻 + 候选 #24 登记
 
 ## 本会话决策
 
 | 决策 | 状态 |
 |------|------|
-| Run #12 初次 Attempt（Python 3.13 free-threaded JIT） | N/A：样本不足 + 全文归档不合格 |
-| Run #12b 重跑（Next.js 15 async request APIs） | ✅ 完成，评分 5/5 |
-| P4 Same-Source Merge 证据范围 | ✅ 从逐字 + translation 扩展到 summary/rewrite |
-| P4 active 状态 | ✅ 保持 active，语义同源合并证据闭环 |
-| 长期文档同步 | ✅ 已同步 survey.md 与 mechanism-candidates.md #19 |
-| 写 handoff | ✅ 用户显式要求，触发 project-rules.md 4.a |
+| 澄清「先开 run13」语义 → Run #13 已闭环密封评分 2/5，本会话实为**新建 Run #14** | ✅ 已澄清，不动 Run #13 任何产物 |
+| 新建 Run #14：P5 **Gap Ledger 最小机制**双盲验证（剥离 Evidence Map 节点-边，仅追加一步强制证据缺口枚举） | ✅ 框架文件已建，状态 Phase 0b |
+| Run #14 单变量隔离 + gap 密集证据集（GT gap ≥5，含显性/隐性各 ≥2）+ 主指标改为 Gap Detection Recall | ✅ 已写入框架 |
+| Run #14 query 锚定 mechanism-candidates #22（Browser Fetch 反爬选型，项目后续真实用到 + 天然 gap 密集） | ✅ 已回填 §2.2/§5/§6.1 |
+| 证据池策略：新建 gap 密集池（不复用 Run #13 池），query 由 agent 推定 | ✅ Phase 0a 确认 |
+| Phase 0b DDG `BOT_DETECTED` 运行时故障处置 → 双轨：Run #14 用「冷却+降速」手动续跑，不停 | ✅ 用户拍板双轨 |
+| 登记 **mechanism-candidates #24**：搜索 MCP 自适应反-bot 节流/退避（Class A，候选） | ✅ 新候选，未写决策、未动代码 |
+| 写 handoff | ✅ 用户口头要求，触发 project-rules.md 4.a |
 
 ---
 
 ## 本会话净变化
 
-### Run #12 / Run #12b
+### Run #14 框架建立（P5 Gap Ledger 最小机制）
 
-权威文件：
+权威文件：[run-14-p5-gap-ledger.md](search-orchestrator/experiments/run-14-p5-gap-ledger.md)
 
-- [run-12-p4-summary-rewrite.md](search-orchestrator/experiments/run-12-p4-summary-rewrite.md)
-- [run-12-output.md](search-orchestrator/experiments/run-12-output.md)
-- [run-12b-output.md](search-orchestrator/experiments/run-12b-output.md)
-- [run-12b-ground-truth.md](search-orchestrator/experiments/run-12b-ground-truth.md)
-- [run-12b-baseline.py](search-orchestrator/experiments/run-12b-baseline.py)
-- [run-12b-baseline-output.md](search-orchestrator/experiments/run-12b-baseline-output.md)
+设计要点（与 Run #13 的关键区别）：
 
-Run #12 初次 Attempt 结论：
+- **单变量隔离**：Run #13 的 Run B 是完整 Evidence Map（Nodes + Edges + Conflict Ledger + Gap Ledger）；Run #14 的 Run B **只保留 Gap Ledger 一步**（强制证据缺口枚举），剥离节点-边/Conflict Ledger，其余与 Run A 完全相同 → 单独测量 Run #13 唯一窄增量的边际贡献。
+- **gap 密集证据集**：GT 要求 ≥5 个 gap（补 Run #13 gap 分母仅 3 的统计功效短板），含显性缺口 ≥2 + 隐性缺口 ≥2（隐性=看似被回答实为单源/过时/范围外推）。
+- **主指标换轨**：从 Material Relation Recall 改为 **Gap Detection Recall + Implicit Gap Recall**；material relation/可追溯/False Gap/Unsupported Relation/Info Loss 转为安全指标。
+- **query**：`评估无头浏览器抓取穿透 Cloudflare 等反爬的可行方案：Playwright / nodriver / Camoufox / FlareSolverr / cloudscraper 与托管云浏览器的有效性、被识别风险、住宅代理与 CAPTCHA 依赖、适用边界`
+- **升级 active（仅 Gap Ledger 进 SKILL.md）触发条件**：≥4/5；≤3/5 则 P5 整条线收敛保持 proposed。
 
-- query：`Python 3.13 free-threaded JIT 新特性 迁移影响`
-- 结果：N/A
-- 原因：summary/rewrite 主样本只有 2 对，低于 ≥3 门槛；§2 仍是摘要式归档；fallback 未完整执行。
+### mechanism-candidates #24 登记
 
-Run #12b 结论：
+[mechanism-candidates.md #24](mechanism-candidates.md)：搜索 MCP 自适应反-bot 节流/退避，Class A，候选。
 
-- query：`Next.js 15 async request APIs breaking changes 迁移`
-- Ground truth 主指标 positive pair：5 对
-  - semantic-summary：3 对
-  - semantic-rewrite：2 对
-- Baseline（URL normalization + SimHash + Jaccard）：P=1.00, R=0.00, F1=0.00
-- P4 LLM：P=1.00, R=1.00, F1=1.00
-- Net Gain：+1.00
-- False Merge：0
-- Information Loss：0
-- 评分：5/5
-
-重要执行教训：Run #12b 第一次产出时样本已达标但 §2 仍不合格；用户要求 Cline 只补 §2 全文归档后，14 个成功 URL 均补齐完整正文或合规分块，才允许进入 ground truth / baseline。
-
-### 长期文档同步
-
-- [survey.md §9.2](search-orchestrator/survey.md#L300)：新增 Run #12b 实验行。
-- [survey.md §9.3](search-orchestrator/survey.md#L314)：P4 状态更新为逐字、translation、summary、rewrite 均有证据覆盖。
-- [survey.md §10.2](search-orchestrator/survey.md#L356)：P4 现成结论影响补 Run #12b。
-- [mechanism-candidates.md #19](mechanism-candidates.md#L41)：#19 更新为逐字 + translation + summary/rewrite 语义子类均验证通过。
+- 触发证据：Run #14 Phase 0b DDG 被封运行时故障 + web-search-setup.md §七 分层（rate limit/bot 重试归 MCP 层）+ duckduckgo-websearch 源码实证。
+- 根因（读 MCP 源码 + DDG 库文档确认）：`max_results>10` 触发 vqd 连续翻页放大 + 同 IP 短时高频 → 越过 DDG 服务端反爬阈值，封 IP/session 级。
+- 理想机制四点：① `BOT_DETECTED` 指数退避 + 跨请求记忆被封状态主动降速；② vqd 翻页间 jitter；③ 会话级熔断（自动降 max_results/串行化）；④ 回退 lite/bing backend。需 fork 上游或包薄 wrapper（现为 `npx -y` 拉上游不可直接改）。
+- 治理依据：与 #21 同理——确定性运行时节流应交给代码而非提示词（提示词靠 LLM 自觉，跨调用不可靠）。
 
 ---
 
@@ -60,20 +44,17 @@ Run #12b 结论：
 
 | 文件 | 说明 |
 |------|------|
-| `docs/search-orchestrator/experiments/run-12-output.md` | Run #12 初次 Phase 0 输出，最终 N/A |
-| `docs/search-orchestrator/experiments/run-12-p4-summary-rewrite.md` | Run #12/12b 实验框架、重跑协议、结果与评分 |
-| `docs/search-orchestrator/experiments/run-12b-output.md` | Run #12b Phase 0 Cline + SKILL 输出 |
-| `docs/search-orchestrator/experiments/run-12b-ground-truth.md` | Run #12b ground truth 标注 |
-| `docs/search-orchestrator/experiments/run-12b-baseline.py` | Run #12b SimHash/Jaccard baseline 脚本 |
-| `docs/search-orchestrator/experiments/run-12b-baseline-output.md` | Run #12b baseline 输出 |
+| `docs/search-orchestrator/experiments/run-14-p5-gap-ledger.md` | Run #14 框架（假设 H14 / 单变量 / gap 密集证据集要求 / 主指标 Gap Detection Recall / 两档提示词 / 执行流程 / 结果区待填） |
+| `docs/search-orchestrator/experiments/run-14-phase0-evidence.md` | Phase 0b evidence pool（Cline + SKILL 侧落盘，**非 TRAE agent 产出**；当前采集受 DDG 反爬中断，仅 Q1 Playwright 10 条结果，待续跑） |
 
 ## 本会话修改文件
 
 | 文件 | 改动 |
 |------|------|
-| `docs/search-orchestrator/survey.md` | §9.2 新增 Run #12b；§9.3 / §10.2 更新 P4 证据范围 |
-| `docs/mechanism-candidates.md` | #19 更新 Run #12b evidence 与状态说明 |
+| `docs/mechanism-candidates.md` | 新增 #24 行（搜索 MCP 自适应反-bot 节流，Class A，候选） |
 | `docs/handoff.md` | 覆盖为本交接 |
+
+注：git status 另显示 Run #13 全部文件仍 untracked、D-2026-06-25 等上一批 modified 未提交 —— 系上一会话 handoff commit 未实际落地的遗留，本次 commit 一并纳入以恢复完整快照。
 
 ---
 
@@ -81,24 +62,25 @@ Run #12b 结论：
 
 权威源：
 
-- [survey.md §9.3 最终路线状态](search-orchestrator/survey.md#L314)
+- [survey.md §9.3 最终路线状态](search-orchestrator/survey.md#L316)
 - [mechanism-candidates.md](mechanism-candidates.md)
 
 本会话净变化：
 
-- P4：从“逐字 + translation 有证据；summary/rewrite 待补” → “逐字 + translation + summary + rewrite 均有证据”。
-- #19：保持已机制化，并扩展为逐字 + translation + summary/rewrite 语义子类均验证通过。
-- P4 后续不再需要继续补 summary/rewrite；除非出现 false merge 或信息损失案例，否则可视为证据闭环。
+- P5：在 Run #13（v2 Evidence Map 2/5 证伪）之后，新建 Run #14 单独验证唯一窄增量「Gap Ledger 强制证据缺口枚举」最小机制。Run #14 尚未评分，P5 路线状态仍 proposed（§9.3 未跳终态）。
+- #24：新登记候选（搜索 MCP 自适应反-bot 节流），未启动。
 
 ---
 
-## 未完成项 / 后续可选方向
+## 未完成项 / 后续动作
 
 | 方向 | 说明 | 优先级 |
 |------|------|--------|
-| P5 Output Schema 重设计 | Run #9c 双盲证伪后，若继续应换新设计：非结构化证据集 + 非字段对齐 schema，避免重复字段对齐天花板场景 | 中 |
-| #22 Browser Fetch 启动评估 | 当前候选（暂缓）。只有 Tier C snippet-only 被证明严重影响答案质量时才启动 | 低 |
-| 审查 / 整理已机制化提示词残留 | #17 / #19 已机制化后，可后续检查是否存在可删除或收敛的提示词冗余 | 低 |
+| **Run #14 Phase 0b 续跑采集**（双轨A） | DDG 被封。动作：Q1 结果先落盘 → 冷却 3-5 分钟 → Q2-Q8 降速续跑（`max_results≤10` 规避翻页连击 + 串行 + 每条间隔 3-5 秒）。仍反复被封则缩小 query 方案对比面（六方案→主力 3-4 个），勿用单方案池硬凑（污染 gap 指标）。**这是 #24 未机制化前的人工 workaround，非实验变量** | 高 |
+| Run #14 Phase 0c/1/2 | 采集完成后：agent 密封 GT（gap ≥5，显性/隐性各 ≥2）→ 用户在 Cline 盲态跑 Run A / Run B → agent 解封评分 | 高 |
+| #24 落地评估（双轨B） | 独立推进，不阻塞 Run #14。评估 fork 上游 vs 薄 wrapper MCP，再定实验框架 | 中 |
+| #22 Browser Fetch 启动评估 | 候选（暂缓）。仅当 Tier C snippet-only 被证明严重影响答案质量才启动 | 低 |
+| run-10-output.md 去留确认 | 上一会话遗留 modified，本次 status 未再出现（疑已恢复/提交），可确认 | 低 |
 
 ---
 
@@ -111,4 +93,4 @@ Run #12b 结论：
 然后读 docs/handoff.md，按下面的工作内容继续。
 ```
 
-接续上下文：本会话完成 Run #12b P4 summary/rewrite 子类补评测（5/5），并同步 survey.md 与 mechanism-candidates.md #19。P4 证据已覆盖逐字、translation、summary、rewrite，除非未来出现 false merge / 信息损失案例，否则 P4 可视为证据闭环。下一步建议优先推进 P5 Output Schema 重设计，注意不要复用 Run #9c 已证伪的字段对齐天花板场景。
+接续上下文：本会话新建 Run #14（P5 Gap Ledger 最小机制双盲验证），它从 Run #13（完整 Evidence Map 2/5 证伪）中剥离出唯一窄增量——「自由文本合成前追加一步强制证据缺口枚举」单独验证，Run B 不再做节点-边/Conflict Ledger。证据集要求 gap 密集（GT gap ≥5，显性/隐性各 ≥2），主指标为 Gap Detection Recall。query 锚定 #22 浏览器反爬选型（天然 gap 密集）。Phase 0a 已确认，Phase 0b 采集时 DDG 触发 BOT_DETECTED：定位根因为 vqd 翻页放大 + 同 IP 高频，已登记新候选 #24（搜索 MCP 自适应反-bot 节流，Class A）。采用双轨：Run #14 用「冷却+降速」手动续跑采集（Q1 已得 10 条），#24 独立评估不阻塞。下一步：在 Cline+SKILL 续跑 Phase 0b 采完 gap 密集证据池 → agent 密封 GT → 盲态跑 Run A/B → 评分。注意执行边界：Phase 0b/1 必须 Cline+SKILL 执行，TRAE agent 不用裸 WebSearch 替代；采集时不得动用代理/headless 等手段（那是被测对象 #22，会污染中立性）。

@@ -2,9 +2,10 @@
 id: D-2026-06-24-search-evaluate-p5-output-schema
 date: 2026-06-24
 topic: search-orchestrator
-status: proposed
+status: superseded
 supersedes: []
-superseded_by: []
+superseded_by:
+  - D-2026-06-25-search-redesign-p5-evidence-map
 evidence:
   - file: search-orchestrator/survey.md
     section: "M5 结构化输出 / Output Schema（L49-54）"
@@ -37,7 +38,9 @@ evidence:
 
 ## 决策
 
-**proposed**：启动 P5 Output Schema 评估。先写本决策草案落定问题定义、机制设想与验证方案；A/B 实验（Run #9）由后续会话执行。
+**superseded**：本决策曾启动 P5 Output Schema v1 评估；Run #9c 双盲验证后，字段对齐式 schema 被证伪，现由 `D-2026-06-25-search-redesign-p5-evidence-map` 取代为 Evidence Map / Claim Graph 重设计。
+
+历史原始决策：启动 P5 Output Schema 评估。先写本决策草案落定问题定义、机制设想与验证方案；A/B 实验（Run #9）由后续会话执行。
 
 ## 一句话理由
 

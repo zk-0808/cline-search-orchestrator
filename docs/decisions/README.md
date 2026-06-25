@@ -20,6 +20,8 @@
 
 | ID | 日期 | 主题 | 状态 | 标题 |
 |----|------|------|------|------|
+| [D-2026-06-25-search-redesign-p5-evidence-map](D-2026-06-25-search-redesign-p5-evidence-map.md) | 2026-06-25 | search-orchestrator | proposed | 重设计 P5：Evidence Map / Claim Graph（非字段对齐 schema） |
+| [D-2026-06-24-search-evaluate-p5-output-schema](D-2026-06-24-search-evaluate-p5-output-schema.md) | 2026-06-24 | search-orchestrator | superseded | 评估 P5 Output Schema v1（字段对齐 schema） |
 | [D-2026-06-24-search-revise-p4-metrics](D-2026-06-24-search-revise-p4-metrics.md) | 2026-06-24 | search-orchestrator | active | 修订 P4 评估指标（域名多样性降级为观察指标） |
 | [D-2026-06-24-search-adopt-p4-same-source-merge](D-2026-06-24-search-adopt-p4-same-source-merge.md) | 2026-06-24 | search-orchestrator | active | 采纳同源内容合并（P4 Same-Source Merge） |
 | [D-2026-06-24-search-adopt-p3](D-2026-06-24-search-adopt-p3.md) | 2026-06-24 | search-orchestrator | active | 采纳 Evidence-bound Citation（P3，三档模式） |
