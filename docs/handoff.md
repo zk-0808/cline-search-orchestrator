@@ -1,192 +1,94 @@
-# Handoff — Run #11 P4 语义场景补评测 + fetch_content 全文归档 Iron Law
+# Handoff — Run #12b P4 summary/rewrite 补评测完成
 
-## 本会话总账
-
-### 会话起点
-
-上会话完成 P6 Highlights 升级 active、SKILL 加载机制修复与 5 条现成结论归档。本会话按 handoff 的可选方向继续，优先推进 **P4 语义场景评测补充**，随后修复 Run #10/Run #11 暴露的 **fetch_content 归档问题**。
-
-### 本会话决策
+## 本会话决策
 
 | 决策 | 状态 |
 |------|------|
-| Run #11：P4 语义场景去重增益验证 | ✅ 完成，评分 4/5 |
-| Run #11 v1 query（Go 1.22 loop variable） | ❌ 数据不足，中文 fetch 失败（知乎 403），可验证语义同源对为 0 |
-| Run #11 v2 query（K8s 1.30 sidecar containers） | ✅ 完成，产生 3 个 translation 对 + 2 个 verbatim 对 |
-| P4 active 状态 | ✅ 获语义场景证据支撑（仅 translation 子类，样本量 3 对，方向性有效） |
-| Baseline 结论表述 | ✅ 修订为 P/R/F1 + 混淆矩阵；区分算法边界 vs 数据限制 |
-| fetch_content 全文归档问题 | ✅ 已机制化为 SKILL.md §2.1 Iron Law |
+| Run #12 初次 Attempt（Python 3.13 free-threaded JIT） | N/A：样本不足 + 全文归档不合格 |
+| Run #12b 重跑（Next.js 15 async request APIs） | ✅ 完成，评分 5/5 |
+| P4 Same-Source Merge 证据范围 | ✅ 从逐字 + translation 扩展到 summary/rewrite |
+| P4 active 状态 | ✅ 保持 active，语义同源合并证据闭环 |
+| 长期文档同步 | ✅ 已同步 survey.md 与 mechanism-candidates.md #19 |
 | 写 handoff | ✅ 用户显式要求，触发 project-rules.md 4.a |
 
 ---
 
-## 关键成果 1：Run #11 P4 语义场景补评测
+## 本会话净变化
+
+### Run #12 / Run #12b
 
 权威文件：
-- [run-11-p4-semantic-merge.md](search-orchestrator/experiments/run-11-p4-semantic-merge.md)
-- [run-11-output.md](search-orchestrator/experiments/run-11-output.md)
-- [run-11-ground-truth.md](search-orchestrator/experiments/run-11-ground-truth.md)
-- [run-11-baseline.py](search-orchestrator/experiments/run-11-baseline.py)
-- [run-11-baseline-output.md](search-orchestrator/experiments/run-11-baseline-output.md)
 
-### 实验设计
+- [run-12-p4-summary-rewrite.md](search-orchestrator/experiments/run-12-p4-summary-rewrite.md)
+- [run-12-output.md](search-orchestrator/experiments/run-12-output.md)
+- [run-12b-output.md](search-orchestrator/experiments/run-12b-output.md)
+- [run-12b-ground-truth.md](search-orchestrator/experiments/run-12b-ground-truth.md)
+- [run-12b-baseline.py](search-orchestrator/experiments/run-12b-baseline.py)
+- [run-12b-baseline-output.md](search-orchestrator/experiments/run-12b-baseline-output.md)
 
-目标：补齐 survey.md §10.2 对 P4 的缺口——逐字场景 Run #7 已验证，但语义同源（改写/翻译/摘要式转载）需补评测。
+Run #12 初次 Attempt 结论：
 
-对比：
-- Run A：lexical baseline（URL normalization + SimHash + Jaccard）
-- Run B：P4 LLM Same-Source Merge
+- query：`Python 3.13 free-threaded JIT 新特性 迁移影响`
+- 结果：N/A
+- 原因：summary/rewrite 主样本只有 2 对，低于 ≥3 门槛；§2 仍是摘要式归档；fallback 未完整执行。
 
-执行主体：
-- Phase 0 搜索 + fetch + P4 合并：Cline + SKILL
-- Phase 1 ground truth 标注：TRAE agent
-- Phase 2 baseline 脚本：TRAE agent
-- Phase 3 指标计算：TRAE agent
+Run #12b 结论：
 
-### v1 失败记录
+- query：`Next.js 15 async request APIs breaking changes 迁移`
+- Ground truth 主指标 positive pair：5 对
+  - semantic-summary：3 对
+  - semantic-rewrite：2 对
+- Baseline（URL normalization + SimHash + Jaccard）：P=1.00, R=0.00, F1=0.00
+- P4 LLM：P=1.00, R=1.00, F1=1.00
+- Net Gain：+1.00
+- False Merge：0
+- Information Loss：0
+- 评分：5/5
 
-第一次 query：`Go 1.22 loop variable semantic change`
+重要执行教训：Run #12b 第一次产出时样本已达标但 §2 仍不合格；用户要求 Cline 只补 §2 全文归档后，14 个成功 URL 均补齐完整正文或合规分块，才允许进入 ground truth / baseline。
 
-失败原因：
-- 中文站点结果少，知乎 fetch 403
-- fetch 成功的 8 个 URL 全为英文
-- 唯一 translation 标注（知乎 → go.dev/blog）无法验证
-- 可验证语义同源对样本量为 0
+### 长期文档同步
 
-已记录在 run-11-p4-semantic-merge.md §9。
-
-### v2 结果
-
-第二次 query：`K8s 1.30 sidecar containers 新特性`
-
-Ground truth：
-
-| 类别 | 对数 |
-|------|------|
-| semantic-translation | 3（1-3, 1-8, 4-6） |
-| verbatim | 2（2-7, 3-8） |
-| different | 23 |
-| 总配对 | 28 |
-
-Baseline 仅合并 2-7，因此混淆矩阵：
-
-|           | GT Positive | GT Negative |
-|-----------|------------:|------------:|
-| Merge     | 1 | 0 |
-| Not Merge | 4 | 23 |
-
-指标：
-
-| 指标 | Baseline | P4 LLM |
-|------|----------|--------|
-| Precision | 1.00 | 1.00 |
-| Recall | 0.20 | 1.00 |
-| F1 | 0.33 | 1.00 |
-| Semantic Merge Recall | 0.00 | 1.00 |
-| False Merge | 0 | 0 |
-
-评分：**4/5**。
-
-### 重要解释边界
-
-用户指出并已同步入文档的关键修订：
-
-1. **translation Miss = 算法边界**
-   - 1-3、1-8、4-6 全部 miss
-   - 正确定性：lexical dedup 不具备跨语言能力，符合文献预期
-   - 不应写成“算法失效”
-
-2. **3-8 verbatim Miss = 数据限制**
-   - Run #11 §2 仅存 fetch 摘要，不是完整正文
-   - 测到的是“摘要级指纹”，不是“文档级指纹”
-   - 不应推论 “SimHash 无法识别 verbatim mirror”
-
-3. **Baseline 最重要性质是 FP=0**
-   - 23 个 different 对无误合并
-   - baseline 性质：高精度、低召回，宁漏杀不误杀
-
-4. **Net Gain +0.80 是上界估计**
-   - 摘要数据限制低估 baseline 的真实 verbatim 检测能力
-   - 若用完整正文，baseline verbatim recall 可能更高，Net Gain 可能收窄
-
-### 同步状态
-
-已同步：
-- survey.md §9.2：新增 Run #11 实验行
-- survey.md §9.3：P4 状态行补 Run #11 结果
-- survey.md §10.2：P4 现成结论影响补语义场景评测
-- mechanism-candidates.md #19：状态更新为“已机制化（逐字 + 语义场景均验证通过）”
+- [survey.md §9.2](search-orchestrator/survey.md#L300)：新增 Run #12b 实验行。
+- [survey.md §9.3](search-orchestrator/survey.md#L314)：P4 状态更新为逐字、translation、summary、rewrite 均有证据覆盖。
+- [survey.md §10.2](search-orchestrator/survey.md#L356)：P4 现成结论影响补 Run #12b。
+- [mechanism-candidates.md #19](mechanism-candidates.md#L41)：#19 更新为逐字 + translation + summary/rewrite 语义子类均验证通过。
 
 ---
 
-## 关键成果 2：fetch_content 全文归档 Iron Law
-
-### 背景
-
-Run #10 与 Run #11 都暴露同一问题：
-
-- 输出文件 §2 标题写“fetch_content 全文归档”
-- 实际只存 2-3 句摘要
-- Run #10：影响 P6 highlights 事后完整字符串匹配验证
-- Run #11：影响 SimHash/Jaccard baseline，导致 3-8 verbatim 对在摘要级指纹条件下 Miss
-
-根因：SKILL.md §3.6.1 写“fetch_content 全文不直接进合成 context，只进 highlights”，但没有明确说明全文仍须归档。执行者将“不进合成 context”误读成“全文可丢弃”。
-
-### 已落地修复
-
-修改 [SKILL.md](../skills/search-orchestrator/SKILL.md)：
-
-1. 新增 §2.1 `fetch_content 全文归档（Iron Law）`
-   - 每个 fetch_content 成功 URL 必须完整归档正文
-   - 不能用摘要、highlights、snippet 代替
-   - fetch 失败 URL 也要记录 URL + 失败原因
-   - 归档章节位于搜索结果表之后、P6 highlights 之前
-
-2. 修改 §3.6.1 P6 触发条件
-   - 澄清：“不直接进合成 context” ≠ “全文丢弃”
-   - 正确数据流：全文 → 归档到输出文件 §2 + 抽取 highlights → highlights 进 Phase 4 合成
-
-同步记录：
-- [.clinerules](../.clinerules) 教训 4：升级为“已明确为 Iron Law”
-- survey.md §9.4：新增工程约定（Iron Laws）表
-
----
-
-## 本会话产生的新文件
+## 本会话新增文件
 
 | 文件 | 说明 |
 |------|------|
-| `docs/search-orchestrator/experiments/run-11-p4-semantic-merge.md` | Run #11 实验框架与结果记录 |
-| `docs/search-orchestrator/experiments/run-11-output.md` | Run #11 Phase 0 Cline + SKILL 输出 |
-| `docs/search-orchestrator/experiments/run-11-ground-truth.md` | Run #11 ground truth 标注 |
-| `docs/search-orchestrator/experiments/run-11-baseline.py` | SimHash/Jaccard baseline 脚本 |
-| `docs/search-orchestrator/experiments/run-11-baseline-output.md` | baseline 输出与 P/R/F1 分析 |
+| `docs/search-orchestrator/experiments/run-12-output.md` | Run #12 初次 Phase 0 输出，最终 N/A |
+| `docs/search-orchestrator/experiments/run-12-p4-summary-rewrite.md` | Run #12/12b 实验框架、重跑协议、结果与评分 |
+| `docs/search-orchestrator/experiments/run-12b-output.md` | Run #12b Phase 0 Cline + SKILL 输出 |
+| `docs/search-orchestrator/experiments/run-12b-ground-truth.md` | Run #12b ground truth 标注 |
+| `docs/search-orchestrator/experiments/run-12b-baseline.py` | Run #12b SimHash/Jaccard baseline 脚本 |
+| `docs/search-orchestrator/experiments/run-12b-baseline-output.md` | Run #12b baseline 输出 |
 
----
-
-## 本会话修改的文件
+## 本会话修改文件
 
 | 文件 | 改动 |
 |------|------|
-| `skills/search-orchestrator/SKILL.md` | 新增 §2.1 fetch_content 全文归档 Iron Law；§3.6.1 补 P6/归档关系澄清 |
-| `.clinerules` | 教训 4 更新为归档 Iron Law；补 Run #11 摘要级指纹教训 |
-| `docs/search-orchestrator/survey.md` | §9.2 新增 Run #11；§9.3 P4 状态补 Run #11；§9.4 新增工程约定；§10.2 更新 P4 现成结论影响 |
-| `docs/mechanism-candidates.md` | #19 更新为“已机制化（逐字 + 语义场景均验证通过）”，补 Run #11 结果 |
-
-> 注意：git status 还显示上会话未提交的文件（如 D-2026-06-25-search-adopt-p6-highlights.md、run-10-output.md、搜索结论.md 等）。project-rules.md §4 子条款要求 handoff 后立即 commit，且 commit 应包含本会话产生的所有新文件和修改文件。若执行 commit，请先确认是否把上会话遗留未提交文件也一并纳入本次 handoff commit。
+| `docs/search-orchestrator/survey.md` | §9.2 新增 Run #12b；§9.3 / §10.2 更新 P4 证据范围 |
+| `docs/mechanism-candidates.md` | #19 更新 Run #12b evidence 与状态说明 |
+| `docs/handoff.md` | 覆盖为本交接 |
 
 ---
 
 ## 当前路线图
 
-> 不在此处重列长期清单。权威源：
-> - [survey.md §9.3 最终路线状态](search-orchestrator/survey.md#L314)
-> - [mechanism-candidates.md](mechanism-candidates.md)
+权威源：
+
+- [survey.md §9.3 最终路线状态](search-orchestrator/survey.md#L314)
+- [mechanism-candidates.md](mechanism-candidates.md)
 
 本会话净变化：
-- P4：从“逐字场景已验证、语义场景待补” → “逐字 + translation 语义场景均有证据支撑”
-- #19：更新为已机制化（逐字 + 语义场景均验证通过）
-- 新增工程 Iron Law：fetch_content 成功 URL 必须完整正文归档
+
+- P4：从“逐字 + translation 有证据；summary/rewrite 待补” → “逐字 + translation + summary + rewrite 均有证据”。
+- #19：保持已机制化，并扩展为逐字 + translation + summary/rewrite 语义子类均验证通过。
+- P4 后续不再需要继续补 summary/rewrite；除非出现 false merge 或信息损失案例，否则可视为证据闭环。
 
 ---
 
@@ -194,20 +96,19 @@ Run #10 与 Run #11 都暴露同一问题：
 
 | 方向 | 说明 | 优先级 |
 |------|------|--------|
-| Run #11 summary/rewrite 子类补评测 | Run #11 只验证了 translation 子类，无 summary/rewrite 样本。若要全面 5/5，需另设 query 或人工构造结果集 | 低 |
-| P5 Output Schema 重设计 | 当前 proposed，Run #9c 双盲证伪。若推进需全新方向（非结构化证据集 + 非字段对齐 schema） | 低 |
-| #22 Browser Fetch 启动评估 | 当前候选（暂缓）。触发条件：Tier C snippet-only 被证明严重影响答案质量 | 低 |
-| 完成 handoff commit | project-rules.md §4 子条款要求。需决定是否纳入上会话遗留未提交文件 | 中 |
+| P5 Output Schema 重设计 | Run #9c 双盲证伪后，若继续应换新设计：非结构化证据集 + 非字段对齐 schema，避免重复字段对齐天花板场景 | 中 |
+| #22 Browser Fetch 启动评估 | 当前候选（暂缓）。只有 Tier C snippet-only 被证明严重影响答案质量时才启动 | 低 |
+| 审查 / 整理已机制化提示词残留 | #17 / #19 已机制化后，可后续检查是否存在可删除或收敛的提示词冗余 | 低 |
 
 ---
 
 ## Handoff（下次会话第一句话建议）
 
-首句话提示词（复制到新会话开头使用）：
+首句话提示词：
 
 ```text
 先读 docs/project-rules.md 一次，遵守里面的三份文档职责划分与五条防漂移约束。
 然后读 docs/handoff.md，按下面的工作内容继续。
 ```
 
-接续上下文：本会话完成 Run #11 P4 语义场景补评测（4/5，仅 translation 子类，P4 active 获方向性语义证据支撑），并将 Run #10/Run #11 暴露的 fetch_content 摘要归档问题修复为 SKILL.md §2.1 Iron Law。当前无紧急机制待办。若继续，可选方向是 Run #11 summary/rewrite 子类补评测、P5 Output Schema 重设计、#22 Browser Fetch 触发评估，或先处理 handoff commit。
+接续上下文：本会话完成 Run #12b P4 summary/rewrite 子类补评测（5/5），并同步 survey.md 与 mechanism-candidates.md #19。P4 证据已覆盖逐字、translation、summary、rewrite，除非未来出现 false merge / 信息损失案例，否则 P4 可视为证据闭环。下一步建议优先推进 P5 Output Schema 重设计，注意不要复用 Run #9c 已证伪的字段对齐天花板场景。

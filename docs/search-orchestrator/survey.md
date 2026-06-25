@@ -309,7 +309,8 @@
 | [run-9b-p5-output-schema-v2](experiments/run-9b-p5-output-schema-v2.md) | P5 Output Schema 多实体对比验证（Gin/Echo/Fiber × 5 维度） | 3/5 有条件 | — | ⚠️ **有条件 active（外部评审决策 C）**。Conflict ID +40% 仅方向性信号（非双盲）；Field Alignment 天花板归因 P3 证据集已结构化；Output Length 已排除（纯格式差异）。Run #9c 须双盲 + 非结构化证据集，Conflict ID Δ < +15% 则降回 proposed |
 | [run-9c-p5-output-schema-v3](experiments/run-9c-p5-output-schema-v3.md) | P5 Output Schema 双盲验证（非结构化证据集） | 2/5 | — | ❌ **双盲证伪，降回 proposed**。Conflict ID Δ=-20%（自由文本 100% > schema 80%），Field Alignment Δ=-7%。核心发现：schema 结构可能限制跨维度冲突发现（执行者倾向只报告 schema 内字段间冲突，自由文本叙事流更灵活）。Schema 幻觉=0 护栏有效但不足以挽救机制收益 |
 | [run-10-p6-highlights](experiments/run-10-p6-highlights.md) | P6 Highlights verbatim 抽取保真度验证（PostgreSQL 17 vs MySQL 8.4） | 4/5 | — | ✅ **P6 升级 active**。Extractive Fidelity 92.3%（24/26），Paraphrase 7.7%（2/26），Untraceable 0。两条 paraphrase 模式：主语同义替换 + 跨语言归纳。提示词层 verbatim 抽取指令基本有效。SKILL 加载机制修复（symlink）后首条 P 级机制通过验证 |
-| [run-11-p4-semantic-merge](experiments/run-11-p4-semantic-merge.md) | P4 语义场景去重增益验证（LLM vs SimHash/Jaccard 基线，K8s sidecar 跨语言） | 4/5 | — | ✅ **P4 语义场景已验证（仅 translation 子类）**。Baseline：P=1.00, R=0.20, F1=0.33（高精度低召回，FP=0）。P4 LLM：P=1.00, R=1.00, F1=1.00。Net Gain（Recall 差）+0.80。3 个 translation 对全部正确合并。Baseline translation Miss 属算法边界（lexical 不具备跨语言能力，文献一致）；3-8 verbatim Miss 属数据限制（仅摘要非全文，摘要级指纹≠文档级指纹）。降级 4/5：样本量仅 3 对（全部 translation），Net Gain +0.80 为上界估计（摘要限制低估 baseline verbatim 能力） |
+| [run-11-p4-semantic-merge](experiments/run-11-p4-semantic-merge.md) | P4 语义场景去重增益验证（LLM vs SimHash/Jaccard 基线，K8s sidecar 跨语言） | 4/5 | — | ✅ **P4 语义场景已验证（translation 子类）**。Baseline：P=1.00, R=0.20, F1=0.33（高精度低召回，FP=0）。P4 LLM：P=1.00, R=1.00, F1=1.00。Net Gain（Recall 差）+0.80。3 个 translation 对全部正确合并。Baseline translation Miss 属算法边界（lexical 不具备跨语言能力，文献一致）；3-8 verbatim Miss 属数据限制（仅摘要非全文，摘要级指纹≠文档级指纹）。降级 4/5：样本量仅 3 对（全部 translation），Net Gain +0.80 为上界估计（摘要限制低估 baseline verbatim 能力） |
+| [run-12-p4-summary-rewrite](experiments/run-12-p4-summary-rewrite.md) | P4 summary/rewrite 子类补评测（Next.js 15 async request APIs） | 5/5 | — | ✅ **P4 semantic-summary / semantic-rewrite 子类验证通过**。Run #12 初次 Python 3.13 Attempt 为 N/A（样本不足 + 全文归档不合格）；Run #12b 严格重跑后通过：GT positive=5（summary 3、rewrite 2），Baseline SimHash/Jaccard：P=1.00, R=0.00, F1=0.00；P4 LLM：P=1.00, R=1.00, F1=1.00；Net Gain +1.00；False Merge=0；Info Loss=0。P4 语义合并证据范围从 translation 扩展到 summary/rewrite |
 
 ### 9.3 最终路线状态
 
@@ -317,7 +318,7 @@
 - P1.5 FinalScore 联动：active
 - P2 Query Rewrite + Fanout：**deferred**（D-2026-06-24-search-defer-p2）
 - **P3 Evidence-bound Citation：active（三档模式，D-2026-06-24-search-adopt-p3）**
-- **P4 Evidence Deduplication：active（同源内容合并，D-2026-06-24-search-adopt-p4-same-source-merge）** — Run #7 逐字场景 Merge Precision 100%；Run #11 语义场景 4/5（跨语言 translation：Baseline P=1.00/R=0.20/F1=0.33，P4 LLM P=1.00/R=1.00/F1=1.00，Net Gain +0.80。Baseline translation Miss 属算法边界，3-8 verbatim Miss 属数据限制。局限：样本量 3 对，仅 translation 子类，Net Gain 为上界估计）
+- **P4 Evidence Deduplication：active（同源内容合并，D-2026-06-24-search-adopt-p4-same-source-merge）** — Run #7 逐字场景 Merge Precision 100%；Run #11 translation 子类 4/5（Baseline P=1.00/R=0.20/F1=0.33，P4 LLM P=1.00/R=1.00/F1=1.00，Net Gain +0.80）；Run #12b summary/rewrite 子类 5/5（GT positive=5：summary 3、rewrite 2；Baseline P=1.00/R=0.00/F1=0.00，P4 LLM P=1.00/R=1.00/F1=1.00，Net Gain +1.00，False Merge=0，Info Loss=0）。P4 证据范围已覆盖逐字、translation、summary、rewrite；后续只在出现 false merge / 信息损失案例时再复评
 - P5 / P6（V2）：候选
 - **P5 Output Schema**：**proposed**（D-2026-06-24-search-evaluate-p5-output-schema）— Run #9 1/5 设计失败，Run #9b 3/5 有条件（非双盲 +40% 方向性信号），Run #9c 2/5 双盲证伪（Conflict ID Δ=-20%，自由文本反超 schema）。降回 proposed 触发条件已满足。核心教训：schema 结构可能限制跨维度冲突发现；非双盲偏差严重高估机制收益
 - **P6 Highlights / Relevance Compression：active**（D-2026-06-25-search-adopt-p6-highlights）— Run #10 4/5：Extractive Fidelity 92.3%，Paraphrase 7.7%，Untraceable 0。提示词层 verbatim 抽取指令基本有效。两条 paraphrase 模式：主语同义替换 + 跨语言归纳
@@ -362,7 +363,7 @@
 | **裁决** | **分场景。** 逐字/近逐字镜像：提示词层与现成方法（SimHash/shingling+MinHash）目标等价，但工程上被严格压制（更贵、更慢、不确定、阈值不可证），属过度工程。语义级同源（改写/洗稿/翻译）：现成句法指纹明确"做不好"，提示词层 LLM 可能真正不等价（更强），但需用语义任务自己的评测证明，不能援引 shingling 成熟度背书 |
 | 工程结论 | 结果级尺度（几条到上百条）下，朴素 SimHash/Jaccard + URL 规范化几行代码即可平替逐字去重。提示词层唯一站得住的差异化是"语义合并"和"零额外基础设施" |
 | 关键来源 | [Manning IR Book §19.6](https://nlp.stanford.edu/IR-book/html/htmledition/near-duplicates-and-shingling-1.html)、[Manku/Google WWW'07](https://research.google.com/pubs/archive/33026.pdf)、[Henzinger DOCENG'13](https://clgiles.ist.psu.edu/pubs/DOCENG2013-near-duplicate-detection.pdf) |
-| 对 P4 决策的影响 | P4 已 active（D-2026-06-24-search-adopt-p4-same-source-merge）。现成结论**部分支持** P4：逐字场景下 P4 是 overkill 但功能等价；语义场景下 P4 有真正价值。**Run #11 已补充语义场景评测**（4/5）：跨语言 translation 场景 P4 LLM P=1.00/R=1.00 vs lexical baseline P=1.00/R=0.20，Net Gain（Recall 差）+0.80，FP=0。Baseline 性质为"高精度低召回"（宁漏杀不误杀），translation Miss 属算法边界（lexical 不具备跨语言能力，文献一致），3-8 verbatim Miss 属数据限制（仅摘要非全文）。局限：样本量 3 对，仅 translation 子类，Net Gain 为上界估计 |
+| 对 P4 决策的影响 | P4 已 active（D-2026-06-24-search-adopt-p4-same-source-merge）。现成结论**部分支持** P4：逐字场景下 P4 是 overkill 但功能等价；语义场景下 P4 有真正价值。Run #11 已验证 translation 子类（4/5）：P4 LLM P=1.00/R=1.00 vs lexical baseline P=1.00/R=0.20，Net Gain +0.80，FP=0。Run #12b 已补 summary/rewrite 子类（5/5）：GT positive=5（summary 3、rewrite 2），Baseline P=1.00/R=0.00/F1=0.00，P4 LLM P=1.00/R=1.00/F1=1.00，Net Gain +1.00，False Merge=0，Info Loss=0。P4 语义证据范围已覆盖 translation、summary、rewrite |
 
 ### 10.3 #20 反证检索 — 负向 query 召回差是否"非提示词可治"
 
