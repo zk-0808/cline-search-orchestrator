@@ -277,9 +277,22 @@ Run the prioritized search queries. For each result:
 2. **Cross-reference** — if two independent sources agree, confidence increases. If they conflict, flag the contradiction.
 3. **Respect rate limits** — batch parallel queries within tool limits, don't spam.
 
-### 2.1 fetch_content 全文归档（Iron Law）
+### 2.1 fetch_content 全文归档（Iron Law，分模式）
 
 > **来源**：Run #10 / Run #11 暴露的系统性问题——§2 标题为"全文归档"但实际只存 2-3 句摘要，导致 Run #11 baseline SimHash 在 verbatim 对上 Miss（"摘要级指纹"≠"文档级指纹"），Net Gain 成为上界估计。
+>
+> **模式区分（2026-06-26 引入，GPT 第二轮评审建议）**：全文归档的三条理由（可审计性 / 基线评测 / verbatim 验证）均属研究/评测场景。日常 agent 使用若强制全文归档，token/IO/latency 成本过高。故分 Research / Production 两模式。
+
+#### 模式选择
+
+| 模式 | 触发 | 适用场景 |
+|------|------|---------|
+| **Research Mode**（默认） | A/B 实验 / Benchmark / 复现研究 / 评测 | 需要事后审计、基线对照、verbatim 验证 |
+| **Production Mode** | 日常 agent 使用 / 在线调研 / 即时问答 | 不需要事后审计，重 token/IO 成本 |
+
+未显式声明时默认 Research Mode（向后兼容现有实验流程）。
+
+#### Research Mode（默认）
 
 **每个 fetch_content 成功的 URL，其返回正文必须完整归档到输出文件的独立章节。**
 
@@ -294,10 +307,22 @@ Run the prioritized search queries. For each result:
 2. **基线评测**：P4 同源合并的算法基线（SimHash/Jaccard）需要全文作为输入——摘要替代正文会破坏 SimHash 经典设定（Run #11 教训）
 3. **P6 highlights 抽取的源数据**：highlights 是从全文中抽取的 verbatim 子串——无全文则 highlights 的 verbatim 性不可验证
 
-**与 P6 的关系**：
+#### Production Mode
+
+**不归档完整正文**，只保存元信息：
+- URL + fetch 状态
+- highlights（P6 §3.6 抽取后）
+- metadata（标题 / 发布日期 / 内容 hash）
+
+#### 与 P6 的关系（两模式共同约束）
+
 - P6 §3.6.1 说"fetch_content 全文不直接进合成 context，只进 highlights"——这是**合成 context** 的约束（Phase 4 合成只用 highlights，不用全文）
-- **不等于"全文丢弃"**——全文必须归档到输出文件，只是不进 Phase 4 合成 context
-- 即：全文 → 归档到输出文件 §2 + 抽取 highlights → highlights 进 Phase 4 合成
+- **不等于"全文丢弃"**——fetch_content 返回的正文在两种模式下都必须**短暂保留在 context 中**供 P3 verbatim 抽取，差异只在是否归档到输出文件
+- 即：fetch_content → 正文进 context + 抽取 highlights → highlights 进 Phase 4 合成 + （Research Mode）正文归档到输出文件
+
+#### Iron Law — 跨模式不变量
+
+无论何种模式，**P3 Quote 必须是 fetch_content 返回正文的连续子串**。Production Mode 不归档全文，但 P3 抽取 Quote 时正文仍必须在 context 中——即"不归档"≠"不可验证"，只是"不持久化到输出文件"。
 
 ---
 
@@ -336,12 +361,22 @@ When evidence conflicts, resolve by source authority, not by counting voices. On
 If T1 source contradicts 20 T3/T4 sources:
   → Defer to T1, note the contradiction, cite the T1 source explicitly
 
+If T1 source contradicts multiple (≥2) T2 sources:
+  → Mark as [T1 与社区冲突], present both sides, do NOT reconcile artificially
+  → Do NOT overturn T1 based on T2 evidence (avoids false-gap risk per Run #14 lesson)
+  → Note: T1 may still be overturned by another T1 (see below) or by freshness decay (§3.4)
+
 If two T1 sources contradict:
   → Flag as [冲突], present both, do NOT reconcile artificially
 
 If no T1/T2 source exists for a claim:
   → Downgrade confidence to Low, mark [社区] sources explicitly
 ```
+
+**T1 与社区冲突的标记规则（2026-06-26 引入，GPT 第二轮评审建议）**：当 T1 结论与 ≥2 个 T2+ 来源给出相反证据时，模型容易误判为"社区有争议"。这种情况：
+- ✅ **标记** `[T1 与社区冲突]` 并在最终答案中并列呈现双方证据
+- ❌ **不推翻** T1（避免 Run #14 false-gap 失败模式：cloudscraper"已淘汰"被误标"待评估"）
+- 若 T1 已过时（§3.4 Freshness 标记），按过时规则降级，不按社区数量推翻
 
 ### 3.4 Freshness Evaluation
 
