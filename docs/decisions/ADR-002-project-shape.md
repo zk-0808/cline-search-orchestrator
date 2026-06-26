@@ -346,3 +346,74 @@ Handoff v2 Design Doc（基于实验结果落实现细节）
         ↓
 Implementation
 ```
+
+---
+
+## Update 1 (2026-06-26): Cline Plugin VS Code 支持硬约束解除
+
+### 事实变化
+
+2026-06-26 核查 Cline 官方 GitHub 文档（[sdk/examples/plugins](https://github.com/cline/cline/tree/main/sdk/examples/plugins)），发现 Context §4 记录的硬约束已解除：
+
+| 时间 | 官方文档原文 |
+|------|------------|
+| 2026-06-23（本 ADR Context §4 记录） | "This feature currently only applies to Cline SDK, CLI, and Kanban. **This feature is not applicable on VSCode and JetBrains Extension for now.**" |
+| 2026-06-26（今日核查） | "A plugin is a single file (or directory) that extends **any Cline agent — CLI, Kanban, VS Code, JetBrains**, or anything built on the Core SDK. Drop one in, get new tools, hooks, providers, or message rewriters everywhere." |
+
+**3 天内（2026-06-23 → 2026-06-26），Cline Plugin 已支持 VS Code 和 JetBrains。** Plugin 现在是"一次写到处跑"——同一 plugin 文件同时服务 CLI / Kanban / VS Code / JetBrains / 任何基于 Core SDK 的 agent。
+
+### 对本 ADR 的影响
+
+| 章节 | 原内容 | Update 后状态 |
+|------|--------|--------------|
+| Context §4（VS Code 不可用硬约束） | Plugin 不适用于 VS Code / JetBrains | **已失效**——Plugin 已支持 VS Code / JetBrains |
+| Context §5（社区无实战沉淀） | SDK v0.0.51，刚推出 | 部分成立（SDK 仍 0.x，但 Plugin 已跨形态可用，社区沉淀待观察） |
+| Decision §当前默认交付形态 | Plugin 作为实验与未来迁移线（NOT 默认交付） | 不变——Plugin 仍非默认交付，但实验线前提已变 |
+| Decision §Plugin 的当前角色定位 | P5 实验目的："在 CLI / SDK 自建环境中验证 Plugin 是否值得成为未来主线" | **修正**——实验环境从 CLI 独立沙盒改为 VS Code 直接实验 |
+| Validation Plan §实验环境（硬约束） | "P5 实验**不能**在 VS Code Cline 中运行（Plugin 不支持）" | **已失效**——P5 实验可直接在 VS Code Cline 中运行 |
+| Validation Plan §最小可行 Plugin 范围 | fork custom-compaction.ts，CLI 环境跑 | 修正——fork custom-compaction.ts，**VS Code 环境跑** |
+| Validation Plan §启动步骤 | `npm i -g cline` + 独立实验仓 | 修正——VS Code Cline 直接装载 plugin，独立实验仓仍建议（隔离产物）但不强制 |
+
+### 对外部评审材料的影响
+
+[ADR-002-p5-experiment-exit-review.md](ADR-002-p5-experiment-exit-review.md)（2026-06-26 撰写）基于"VS Code 不可用"前提，该前提现已失效：
+
+| 评审材料章节 | 原论据 | Update 后状态 |
+|-------------|--------|--------------|
+| §2.3 VS Code 不可用硬约束未解除 | 支持舍弃 | **已失效** |
+| §2.4 SDK 0.x 风险 | 支持舍弃 | 部分成立（SDK 仍 0.x，但 Plugin 跨形态可用降低此风险） |
+| §3.3 实验环境与生产环境分离 | 反对舍弃 | **已失效**（VS Code 可直接实验） |
+| §4 选项 C（CLI 独立沙盒最小验证） | 中间路径推荐 | **需修正**——改为 VS Code 直接最小验证，成本更低 |
+| §5 Q4/Q6 中间路径推荐 | C→B 组合 | 仍成立，但 C 的执行环境改为 VS Code |
+
+评审核心结论（"先做最小闭环验证再决定"）仍成立，且**验证成本下降**——无需安装 Cline CLI、无需独立沙盒、无需跨环境迁移结论。
+
+### Plugin 能力补充说明（核查所得）
+
+官方文档明确了 Plugin 与其它手段的能力边界，对 mechanism-candidates #1–#6、#14 的归宿判定至关重要：
+
+| 能力 | Plugin | 文件 Hook（.cline/hooks/*） | Wrapper MCP | 外部 watcher |
+|------|--------|---------------------------|-------------|-------------|
+| `registerMessageBuilder`（compact 关键） | ✅ | ❌ | ❌ | ❌ |
+| `registerTool` | ✅ | ❌ | ✅（等价） | ❌ |
+| runtime hooks（8 种，含 onEvent） | ✅ | 部分（9 种文件事件适配） | ❌ | ❌ |
+| typed in-process callbacks | ✅ | ❌（JSON 序列化外部脚本） | ❌（跨进程） | ❌（跨进程） |
+| 跨形态复用（CLI/Kanban/VSCode/JetBrains） | ✅ | 依赖 Cline 实现 | ✅ | 系统级 |
+
+**关键发现**：#5（compact + handoff 双产物）的 `registerMessageBuilder` 是 Plugin 独有能力，文件 Hook / Wrapper MCP / 外部 watcher 均无法介入 model call 前的消息重写层。这直接回答了评审材料 §3.1/§3.3 的"运行时任务是否必须 Plugin"——**至少 compact 自动化必须 Plugin**。
+
+### 后续动作
+
+1. **本 Update 落地后**：评审材料前提已变，用户需决定是否重新评审或直接进入选项 C（VS Code 最小闭环验证）
+2. **机制清单 #1–#4 归宿**：Plugin 已支持 VS Code，#1–#4 的理想机制（plugin）可行路径恢复，不再需要"等待 Runtime 能力"暂缓标记
+3. **P5 实验环境调整**：从 CLI 独立沙盒改为 VS Code 直接实验（成本下降），独立实验仓仍建议用于产物隔离
+4. **survey.md §9.1 同步**：本 Update 非 status 变更（ADR-002 仍 active），不触发 project-rules.md 约束 1/2，无需加新行
+
+### 本 Update 不变更的内容
+
+- ADR-002 整体方向（薄 Skills + 单点 WebSearch MCP + 经验文档 + Plugin 实验线）不变
+- ADR-002 §项目定位（L1/L2/L3 三层）不变
+- ADR-002 §退休条件 / Review Trigger 不变（SDK v1.0+ 等仍适用）
+- ADR-002 status 仍为 active（非 superseded，非新 ADR-003）
+
+本 Update 仅记录外部事实变化（Cline Plugin 支持 VS Code）及其对本 ADR 局部章节的修正，不构成整体决策推翻。
