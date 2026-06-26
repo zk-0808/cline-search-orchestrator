@@ -293,7 +293,7 @@
 | [D-2026-06-24-search-evaluate-p5-output-schema](../decisions/D-2026-06-24-search-evaluate-p5-output-schema.md) | superseded | 评估 P5 Output Schema v1（字段对齐 schema）— Run #9c 双盲证伪后被 Evidence Map / Claim Graph 重设计取代 |
 | [D-2026-06-25-search-redesign-p5-evidence-map](../decisions/D-2026-06-25-search-redesign-p5-evidence-map.md) | proposed | 重设计 P5：Evidence Map / Claim Graph（非字段对齐 schema）— Run #13 2/5 双盲证伪，保持 proposed |
 | [D-2026-06-25-search-adopt-p6-highlights](../decisions/D-2026-06-25-search-adopt-p6-highlights.md) | active | 采纳 P6 Highlights（fetch 后 verbatim 抽取 ≤500 token） |
-| [D-2026-06-26-search-adopt-mcp-throttle-wrapper](../decisions/D-2026-06-26-search-adopt-mcp-throttle-wrapper.md) | proposed | 采纳 MCP 反-bot 节流 wrapper（方案 C：强制 max_results≤10 + 跨调用状态 + 指数退避）— 对应 #24，源码评估后选定薄 wrapper + 禁分页 |
+| [D-2026-06-26-search-adopt-mcp-throttle-wrapper](../decisions/D-2026-06-26-search-adopt-mcp-throttle-wrapper.md) | active | 采纳 MCP 反-bot 节流 wrapper（方案 C：强制 max_results≤10 + 跨调用状态 + 指数退避）— 对应 #24，11/11 集成测试 + Run #14 Phase 0b 功能性验证通过，已机制化 |
 
 ### 9.2 A/B 实验数据
 

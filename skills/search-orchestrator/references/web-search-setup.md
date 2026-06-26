@@ -59,7 +59,7 @@ npx --version
       "timeout": 60,
       "type": "stdio",
       "command": "node",
-      "args": ["e:/cline++/search-mcp-wrapper/build/index.js"]
+      "args": ["../../../search-mcp-wrapper/build/index.js"]
     }
   }
 }
