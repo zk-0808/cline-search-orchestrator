@@ -2,7 +2,7 @@
 
 > 对应决策：`D-2026-06-25-search-redesign-p5-evidence-map`（proposed，本 run 验证其衍生最小机制）
 >
-> 状态：待执行（Phase 0b — 等待 Cline 生成 gap 密集 evidence pool）
+> 状态：已完成（Phase 2 评分 4/5，Gap Ledger 升级 active，进入 SKILL.md）
 >
 > Designated executor：Phase 0a 由 TRAE agent 与用户确认 query / 证据池策略；Phase 0b 由用户复制提示词到 Cline + search-orchestrator SKILL 生成 gap 密集 evidence pool（若复用 Run #13 池则跳过）；Phase 0c 由 TRAE agent 根据 evidence pool 密封 GT；Phase 1a / 1b 由用户复制提示词到 Cline + search-orchestrator SKILL 盲态执行；Phase 2 由 TRAE agent 在收到输出后解封评分。
 
@@ -206,40 +206,61 @@ Step 2 — Final Answer
 
 ### 6.2 Evidence Pool
 
-`<Phase 0b 或复用 Run #13 后填入>`
+[run-14-phase0-evidence.md](run-14-phase0-evidence.md) — 18 条 P3 三元组（E1-E18），覆盖 6 方案，wrapper 节流熔断后降级补完，§3 反证不足汇总 9 项缺口如实记录
 
 ### 6.3 Ground Truth
 
-`<Phase 0c 后填入>`
+[run-14-ground-truth-sealed.md](run-14-ground-truth-sealed.md) — 已密封（2026-06-26）：9 个 gap（4 显性 G1-G4 + 5 隐性 G5-G9）+ 5 个 material relation（M1-M5）；盲态约束：Run A/B 执行前不可展示给 Cline
 
 ### 6.4 Run A 输出
 
-`<Phase 1a 后填入>`
+[run-14-run-a-output.md](run-14-run-a-output.md) — 自由文本合成，10 节，~3300 字，关键判断引用 E1-E18
 
 ### 6.5 Run B 输出
 
-`<Phase 1b 后填入>`
+[run-14-run-b-output.md](run-14-run-b-output.md) — Step 1 Gap Ledger（32 项缺口）+ Step 2 Final Answer，~4500 字
 
 ### 6.6 指标实测
 
 | 指标 | Run A | Run B | Δ |
 |------|------:|------:|--:|
-| Gap Detection Recall | | | |
-| Implicit Gap Recall | | | |
-| Material Relation Recall | | | |
-| Traceability Rate | | | |
-| False Gap Count | | | |
-| Unsupported Relation Count | | | |
-| Information Loss Count | | | |
-| Answer Verbosity Delta | | | |
+| Gap Detection Recall | 3/9 = 33.3% | 8/9 = 88.9% | **+55.6%** |
+| Implicit Gap Recall | 2/5 = 40% | 4/5 = 80% | +40% |
+| Material Relation Recall | 5/5 = 100% | 5/5 = 100% | 0 |
+| Traceability Rate | ~100% | ~100% | 0 |
+| False Gap Count | 0 | 1 | +1 |
+| Unsupported Relation Count | 0 | 0 | 0 |
+| Information Loss Count | 0 | 0 | 0 |
+| Answer Verbosity Delta | 基准 | +36% | +36% |
 
 ### 6.7 评分
 
-`<Phase 2 后填入>`
+**4/5**
+
+判定依据：
+- ✅ Gap Detection Recall Δ = +55.6% ≥ +20%（远超 4/5 阈值 +20%，接近 5/5 阈值 +30%）
+- ✅ Implicit Gap Recall Δ = +40% ≥ +30%（满足 5/5 隐性缺口要求）
+- ✅ Material Relation Recall 不退化（100% = 100%）
+- ✅ Traceability Rate 不退化
+- ✅ Unsupported Relation Count = 0
+- ✅ Information Loss Count 不增
+- ❌ False Gap Count = 1（Run B G15 把 cloudscraper "已淘汰"误标为"侦察用途待评估"，属轻度 false gap，阻挡 5/5）
+
+未达 5/5 的唯一原因：False Gap = 1。Run B 在追求 gap 召回时对 cloudscraper 的"侦察用途"做了过度延伸标注，把证据充分支持的"已淘汰"结论误标为"有待评估的缺口"。
 
 ### 6.8 决策
 
-`<Phase 2 后填入>`
+**升级 active**（满足 ≥4/5 触发条件）
+
+Gap Ledger 最小机制作为 P5 的唯一落地候选进入 SKILL.md。
+
+**机制描述**：在自由文本合成前追加一步「强制枚举证据缺口（Gap Ledger）」——逐一扫描问题涉及的每个子维度，显式列出 gap 描述 / gap 类型（缺反证 / 无直接对比 / 单一来源 / 证据过时 / 范围外推）/ 相关 evidence id / 置信度；必须主动检查隐性缺口（单源 / 利益相关 / 过时 / 范围外推），不只列显性缺口；Gap Ledger 中标注的缺口必须在最终答案以"证据不足/低置信"方式显式呈现。
+
+**收益量化**：Gap Detection Recall +55.6%（33.3% → 88.9%），隐性缺口召回 +40%（40% → 80%），安全指标全部不退化。
+
+**成本**：答案篇幅 +36%（Gap Ledger 占主要增量，可接受）。
+
+**失败模式**（需在 SKILL.md 标注）：追求 gap 召回时可能产生轻度 false gap（把证据充分的结论误标为"待评估"）。缓解措施：Gap Ledger 每项需引用 evidence id，若 evidence 已充分支持某结论则不应标为 gap。
 
 ---
 

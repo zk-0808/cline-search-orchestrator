@@ -293,6 +293,7 @@
 | [D-2026-06-24-search-evaluate-p5-output-schema](../decisions/D-2026-06-24-search-evaluate-p5-output-schema.md) | superseded | 评估 P5 Output Schema v1（字段对齐 schema）— Run #9c 双盲证伪后被 Evidence Map / Claim Graph 重设计取代 |
 | [D-2026-06-25-search-redesign-p5-evidence-map](../decisions/D-2026-06-25-search-redesign-p5-evidence-map.md) | proposed | 重设计 P5：Evidence Map / Claim Graph（非字段对齐 schema）— Run #13 2/5 双盲证伪，保持 proposed |
 | [D-2026-06-25-search-adopt-p6-highlights](../decisions/D-2026-06-25-search-adopt-p6-highlights.md) | active | 采纳 P6 Highlights（fetch 后 verbatim 抽取 ≤500 token） |
+| [D-2026-06-26-search-adopt-mcp-throttle-wrapper](../decisions/D-2026-06-26-search-adopt-mcp-throttle-wrapper.md) | proposed | 采纳 MCP 反-bot 节流 wrapper（方案 C：强制 max_results≤10 + 跨调用状态 + 指数退避）— 对应 #24，源码评估后选定薄 wrapper + 禁分页 |
 
 ### 9.2 A/B 实验数据
 
@@ -313,6 +314,7 @@
 | [run-11-p4-semantic-merge](experiments/run-11-p4-semantic-merge.md) | P4 语义场景去重增益验证（LLM vs SimHash/Jaccard 基线，K8s sidecar 跨语言） | 4/5 | — | ✅ **P4 语义场景已验证（translation 子类）**。Baseline：P=1.00, R=0.20, F1=0.33（高精度低召回，FP=0）。P4 LLM：P=1.00, R=1.00, F1=1.00。Net Gain（Recall 差）+0.80。3 个 translation 对全部正确合并。Baseline translation Miss 属算法边界（lexical 不具备跨语言能力，文献一致）；3-8 verbatim Miss 属数据限制（仅摘要非全文，摘要级指纹≠文档级指纹）。降级 4/5：样本量仅 3 对（全部 translation），Net Gain +0.80 为上界估计（摘要限制低估 baseline verbatim 能力） |
 | [run-12-p4-summary-rewrite](experiments/run-12-p4-summary-rewrite.md) | P4 summary/rewrite 子类补评测（Next.js 15 async request APIs） | 5/5 | — | ✅ **P4 semantic-summary / semantic-rewrite 子类验证通过**。Run #12 初次 Python 3.13 Attempt 为 N/A（样本不足 + 全文归档不合格）；Run #12b 严格重跑后通过：GT positive=5（summary 3、rewrite 2），Baseline SimHash/Jaccard：P=1.00, R=0.00, F1=0.00；P4 LLM：P=1.00, R=1.00, F1=1.00；Net Gain +1.00；False Merge=0；Info Loss=0。P4 语义合并证据范围从 translation 扩展到 summary/rewrite |
 | [run-13-p5-evidence-map](experiments/run-13-p5-evidence-map.md) | P5 v2 Evidence Map / Claim Graph 双盲验证（Gateway API，非结构化证据集） | 2/5 | — | ❌ **保持 proposed**。Material Relation Recall：Run A 15/16=93.8%，Run B 16/16=100%，Δ=+6.3% < +15%。Cross-Dimension Recall 双方 12/12 天花板，Δ=0。安全指标（False Conflict / Unsupported Relation / Info Loss）双方均为 0。结构化中间表示再次未对自由文本展现决定性优势。唯一可复现增量：Gap Ledger 强制枚举证据缺口（捕获 Run A 漏掉的回滚 gap GT15）。衍生候选：后续应只验证“追加 Gap Ledger / 证据缺口枚举”最小机制，而非完整 Evidence Map |
+| [run-14-p5-gap-ledger](experiments/run-14-p5-gap-ledger.md) | P5 Gap Ledger 最小机制双盲验证（Cloudflare 反爬方案，gap 密集证据集 9 gap + 5 relation） | **4/5** | — | ✅ **P5 Gap Ledger 升级 active**。Gap Detection Recall Δ=+55.6%（33.3% → 88.9%），Implicit Gap Recall Δ=+40%（40% → 80%），Material Relation / Traceability / Unsupported / Info Loss 全部不退化。False Gap=1（Run B G15 把 cloudscraper“已淘汰”误标为“侦察用途待评估”，阻挡 5/5）。成本：篇幅 +36%（Gap Ledger 占主要增量，可接受）。Gap Ledger 最小机制作为 P5 唯一落地候选进入 SKILL.md。失败模式：追求 gap 召回时可能产生轻度 false gap，缓解措施=每项 gap 需引用 evidence id，evidence 充分则不应标 gap |
 
 ### 9.3 最终路线状态
 
@@ -322,6 +324,7 @@
 - **P3 Evidence-bound Citation：active（三档模式，D-2026-06-24-search-adopt-p3）**
 - **P4 Evidence Deduplication：active（同源内容合并，D-2026-06-24-search-adopt-p4-same-source-merge）** — Run #7 逐字场景 Merge Precision 100%；Run #11 translation 子类 4/5（Baseline P=1.00/R=0.20/F1=0.33，P4 LLM P=1.00/R=1.00/F1=1.00，Net Gain +0.80）；Run #12b summary/rewrite 子类 5/5（GT positive=5：summary 3、rewrite 2；Baseline P=1.00/R=0.00/F1=0.00，P4 LLM P=1.00/R=1.00/F1=1.00，Net Gain +1.00，False Merge=0，Info Loss=0）。P4 证据范围已覆盖逐字、translation、summary、rewrite；后续只在出现 false merge / 信息损失案例时再复评
 - P5 / P6（V2）：候选
+- **P5 Gap Ledger（最小机制）：active**（Run #14 4/5，2026-06-26）— 在自由文本合成前追加一步「强制枚举证据缺口（Gap Ledger）」。收益：Gap Detection Recall Δ=+55.6%（33.3% → 88.9%），Implicit Gap Recall Δ=+40%（40% → 80%），安全指标全部不退化。成本：篇幅 +36%。失败模式：追求 gap 召回可能产生轻度 false gap（False Gap=1 阻挡 5/5），缓解措施=每项 gap 需引用 evidence id，evidence 充分则不应标 gap。进入 SKILL.md。P5 完整 Evidence Map / Claim Graph 保持 proposed，不再推进（Run #13 2/5 已证伪）
 - **P5 Output Schema / Evidence Map**：**proposed**（D-2026-06-25-search-redesign-p5-evidence-map；supersedes D-2026-06-24-search-evaluate-p5-output-schema）— Run #9 1/5 设计失败，Run #9b 3/5 有条件，Run #9c 2/5 双盲证伪字段对齐 schema，Run #13 2/5 双盲证伪 Evidence Map / Claim Graph（Material Relation Recall Δ=+6.3% < +15%，Cross-Dimension 双方 12/12 天花板，安全指标全 0）。两代结构化中间表示均未对自由文本展现决定性优势。唯一可复现增量：Gap Ledger 强制枚举证据缺口。后续若再评估 P5，只验证“追加 Gap Ledger / 证据缺口枚举”最小机制，不再做完整 Evidence Map
 - **P6 Highlights / Relevance Compression：active**（D-2026-06-25-search-adopt-p6-highlights）— Run #10 4/5：Extractive Fidelity 92.3%，Paraphrase 7.7%，Untraceable 0。提示词层 verbatim 抽取指令基本有效。两条 paraphrase 模式：主语同义替换 + 跨语言归纳
 - **Infra（MCP 后端升级）**：**rolled-back**（D-2026-06-24-search-infra-mcp-upgrade）— Run #8a 否决 TLS 指纹假设；中文场景永久 Tier C；新候选 M-22 Browser-backed Fetch 状态：**候选（暂缓）**，触发条件为 Tier C 被证明严重影响答案质量

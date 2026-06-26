@@ -5,6 +5,8 @@
 
 > 文档与现状对齐说明（2026-06-23）：本指南原推荐 `uvx + nickclyde/duckduckgo-mcp-server`，但实测发现 npm 上的 `duckduckgo-websearch` 在能力上覆盖更广（分页、Bot 重试、高级查询语法）且无需追加运行时。主推方案已切换为 `npx + duckduckgo-websearch`，原 `uvx + nickclyde` 方案降级为备选（见第六节）。
 
+> 文档与现状对齐说明（2026-06-26）：Run #14 Phase 0b 实测发现 `npx -y duckduckgo-websearch` 直连在 vqd 翻页连击下易触发 DDG bot detection（被封 cookie 进程级单例持续携带）。已落地项目内 wrapper（`search-mcp-wrapper/`，对应 D-2026-06-26-search-adopt-mcp-throttle-wrapper）实现：强制 `max_results≤10`（禁分页消除 vqd 连击）+ 3 次失败阈值熔断 + 指数退避 30s/2min/10min + 跨调用状态记忆。**主推方案切换为 wrapper**，原 `npx` 直连降级为回滚备选（见第二节 §2.2）。wrapper 11/11 集成测试通过。
+
 ---
 
 ## 推荐方案：duckduckgo-websearch（Node + npx）
@@ -44,7 +46,41 @@ npx --version
 
 打开 Cline 的 MCP 配置文件（`cline_mcp_settings.json`），加入：
 
-### 基础配置
+### §2.1 推荐配置：项目内 wrapper（含反-bot 节流）
+
+**前提**：项目内 `search-mcp-wrapper/` 已 build（`cd search-mcp-wrapper && npm install && npm run build`）。
+
+```json
+{
+  "mcpServers": {
+    "duckduckgo": {
+      "autoApprove": ["search"],
+      "disabled": false,
+      "timeout": 60,
+      "type": "stdio",
+      "command": "node",
+      "args": ["e:/cline++/search-mcp-wrapper/build/index.js"]
+    }
+  }
+}
+```
+
+**wrapper 行为**（对应 D-2026-06-26-search-adopt-mcp-throttle-wrapper）：
+
+| 行为 | 说明 |
+|------|------|
+| 强制 `max_results ≤ 10` | 禁分页，从根上消除 vqd 翻页连击（SKILL §1.4.1 每路只用 10，零损失） |
+| 3 次失败阈值熔断 | 1h 滑动窗口内 3 次 `BOT_DETECTED` 触发熔断，熔断期内返回 `CIRCUIT_OPEN` |
+| 指数退避 | 熔断时长按熔断次数递增：30s → 2min → 10min（封顶） |
+| 跨调用状态 | 熔断状态在 wrapper 进程内持久（重启 Cline 才清） |
+| 成功完全恢复 | 一次成功调用清空 recentFailures + blockedUntil + circuitBreakCount |
+| fetch_content 透传 | 不加节流（fetch 与 search 反爬正交） |
+
+> ⚠️ 路径用正斜杠 `/`（Cline JSON 兼容），绝对路径指向项目内 build 产物。
+
+### §2.2 回滚配置：直连 npx（无节流）
+
+若 wrapper 引入新问题需回滚：
 
 ```json
 {
@@ -61,14 +97,14 @@ npx --version
 }
 ```
 
-**字段说明**：
+**字段说明**（两配置通用）：
 
 | 字段 | 含义 | 建议 |
 |------|------|------|
 | `autoApprove` | 自动授权的工具列表 | `search` 可自动；`fetch_content` 建议保持手动确认 |
 | `disabled` | 是否禁用 | `false` |
 | `timeout` | stdio 超时（秒） | `60` 足够 |
-| `command` / `args` | 拉起方式 | `npx -y duckduckgo-websearch` 等价于「拉最新版直接跑」 |
+| `command` / `args` | 拉起方式 | wrapper 用 `node <path>/index.js`；直连用 `npx -y duckduckgo-websearch` |
 
 > ⚠️ **注意**：当前版本不支持通过环境变量配置 SafeSearch / Region。如果你需要严格内容过滤或区域指定，参考第六节备选方案。
 
@@ -203,15 +239,18 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 ```
 search-orchestrator/SKILL.md      ← 教 LLM 怎么搜（方法论）
         ↓ requires_mcp: ["duckduckgo"]
-duckduckgo-websearch MCP（本指南配置）  ← 真实执行（实现）
+search-mcp-wrapper（项目内，§2.1）  ← 反-bot 节流（cap/熔断/退避）
+        ↓ require('duckduckgo-websearch')
+duckduckgo-websearch 上游          ← 真实执行（HTTP/HTML/rate limit/bot 重试）
 ```
 
-两层职责分离：
+三层职责分离：
 
 - **Skill 层**（项目内）：Plan / Search / Evaluate / Synthesize 流程，可信度分级，反证搜索
-- **MCP 层**（外部）：实际 HTTP 请求、HTML 解析、rate limit、bot 重试
+- **Wrapper 层**（项目内，2026-06-26 新增）：强制 cap、跨调用状态、熔断、指数退避
+- **MCP 上游层**（外部）：实际 HTTP 请求、HTML 解析、rate limit、bot 重试
 
-如需替换为其他搜索后端，只需替换 MCP 配置，Skill 层不动。
+如需替换为其他搜索后端，只需替换 wrapper 的上游依赖（或回滚到 §2.2 直连），Skill 层不动。
 
 ---
 
@@ -230,3 +269,4 @@ duckduckgo-websearch MCP（本指南配置）  ← 真实执行（实现）
 - 本指南推荐版本：`duckduckgo-websearch` v2.0.3 或更新
 - 上游变更监控：偶尔查 [npmjs.com/package/duckduckgo-websearch](https://www.npmjs.com/package/duckduckgo-websearch) 或 [Releases](https://github.com/HeiSir2014/duckduckgo-mcp-server/releases)
 - 若上游废弃 → 评估第六节备选，本文件更新推荐
+- **wrapper 维护**（2026-06-26 新增）：`search-mcp-wrapper/` 源码在项目内，对应决策 D-2026-06-26-search-adopt-mcp-throttle-wrapper；若 wrapper 行为需调整（如熔断阈值、退避时长），改 `search-mcp-wrapper/src/index.ts` 后 `npm run build`，Cline 重启生效；测试用 `npm test`（11 场景，mock 上游不触真实 DDG）

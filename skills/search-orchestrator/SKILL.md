@@ -579,7 +579,46 @@ Run #10 验证的两条 paraphrase 失败模式（须避免）：
 
 ## Phase 4: Synthesize (Output)
 
-### 4.1 Structure the Answer
+### 4.1 Gap Ledger（强制证据缺口枚举，合成前必做）
+
+在写最终答案之前，先逐一扫描问题涉及的每个子维度，显式列出证据缺口。这是 P5 最小机制（Run #14 4/5 验证通过，2026-06-26），不可跳过。
+
+**机制收益**：Gap Detection Recall +55.6%（33.3% → 88.9%），隐性缺口召回 +40%（40% → 80%），安全指标全部不退化。
+
+**输出格式**：
+
+```
+## Gap Ledger
+
+| # | gap 描述 | gap 类型 | 相关 evidence id | 置信度 |
+|---|---------|---------|-----------------|-------|
+| G1 | [哪个子问题证据不足] | [类型] | [E1/§x.y] | low/medium |
+| G2 | ... | ... | ... | ... |
+```
+
+**gap 类型枚举**：
+- **缺反证**：positive claim 无独立验证，或反证搜索未执行
+- **无直接对比**：跨方案横向数据缺失，结论靠推演
+- **单一来源**：多个方案的数据复用同一来源（如三家方案通过率均出自一家测试）
+- **证据过时**：来源发布时间距今 ≥3 个月，且领域演进快
+- **范围外推**：仅测试某子集（如 Chromium）结论被推广到全部（如 Playwright 全引擎）
+
+**必查的隐性缺口**（不可只列显性"未找到"）：
+1. **单源外推**：多个量化数据是否复用同一来源？若是，标注。
+2. **利益相关**：评测方是否是被评测方的竞争对手或服务商？若是，标注置信度降级。
+3. **范围外推**：测试覆盖的子集（语言/引擎/版本）是否被无声推广到全集？若是，标注。
+4. **时效衰减**：来源是否 ≥3 个月前发布且领域快速演进？若是，标注。
+5. **反证缺位**：positive claim 是否无独立反证搜索覆盖？若是，标注。
+
+**Iron Law — Gap Ledger 边界**：
+- ✅ 每项 gap **必须**引用 evidence id（E1/§x.y）。无 evidence id 的 gap 不应列入。
+- ✅ 若 evidence 已充分支持某结论，**不应**标为 gap（避免 false gap）。
+- ✅ Gap Ledger 中标注的缺口**必须**在最终答案中以"证据不足/低置信"方式显式呈现，不得隐去。
+- ❌ 不要在 Gap Ledger 里生成 Evidence Nodes、Relation Edges 或 Conflict Ledger——只做缺口枚举。
+
+**失败模式警示**（Run #14 实测）：追求 gap 召回时可能把证据充分的结论误标为"待评估"（false gap）。缓解措施=每项 gap 需引用 evidence id，evidence 充分则不应标 gap。
+
+### 4.2 Structure the Answer
 
 ```
 ## Conclusion
@@ -606,7 +645,7 @@ Run #10 验证的两条 paraphrase 失败模式（须避免）：
 | some-blog.com | Personal blog | [社区] Low |
 ```
 
-### 4.2 Source Credibility Standards
+### 4.3 Source Credibility Standards
 
 Follow `.clinerules` 宪法一 evidence labeling:
 
@@ -674,7 +713,7 @@ Credibility order: 实测 > 源码 > 文档 > 社区 > 推测
 - 如果 Tier C：[P3 Coverage Low] 是否标注？  □ Yes / □ No
 ```
 
-### 4.4 Mark Uncertainty Explicitly
+### 4.5 Mark Uncertainty Explicitly
 
 Never present a guess as fact. Use explicit markers:
 - `[未验证]` for unverified claims
