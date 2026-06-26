@@ -68,6 +68,10 @@
 
    **子条款：执行产出归档路径**：Cline 执行提示词必须在开头声明输出文件的建议存放位置，格式为 `docs/<功能>/experiments/run-N-phase*-*.md`。若提示词未声明位置，Cline 执行模型会自主选择位置（如 `research/`），导致产出文件脱离实验目录治理。此子条款将 `ab-test-template.md:140` 的提示性语句提升为硬规则。
 
+   **子条款：cline 交互式会话需真实终端（TTY）**：凡需实际发起 cline 会话的命令（`cline -i` / `cline -v "..."` / 任何进入 agent loop 的调用），必须交由用户在真实终端执行，TRAE agent 不得在非交互终端代跑——否则报 `EBADF: bad file descriptor, write` 并挂起。TRAE agent 只负责非交互命令（install / config / 目录与文件检查）与结果判读。源由：P5 Spike 实跑（2026-06-26，experiments/p5-spike/run-p5-capability-spike.md §7 教训 2）。
+
+   **子条款：阴性结论须先排除验证方法错误**：以"失败/不存在/不可用"为依据下退出或否决类结论前，必须先用一个已知应成功的对照确认验证方法本身有效；共享同一前提的多条证据不算独立交叉验证。源由：P5 Spike No-Go 误判（2026-06-26，§7 教训 1——`config plugins` 的 `-c` 参数语义误解导致假阴性，连带"官方样例也失败"的伪交叉验证）。
+
    *设计意图*：与"不在 SKILL 层做基础设施层的事"（handoff.md）、"绝不用规则解决运行时问题"（README.md）构成同构治理原则——不在错误的层做错误的事。
 
 ---

@@ -3,7 +3,7 @@
 **日期**：2026-06-26
 **designated_executor**：TRAE agent（代码编写 + 框架文档）→ 用户手动（CLI 安装 + 实跑验证）
 **时间窗口**：0.5–1 天工程量上限
-**状态**：concluded — **No-Go**（2026-06-26）
+**状态**：partial Go（2026-06-26）— #6 session_start hook 已实证触发；#5 compact 双产物待长任务触发实证。先前 No-Go 判定已撤销（验证方法假阴性）
 
 ---
 
@@ -83,7 +83,17 @@
 
 ## 5. Spike 结果
 
-**结论：No-Go**（2026-06-26）。根因为外部 CLI 运行时能力缺失，非我方实现缺陷。
+**结论：partial Go（2026-06-26）。插件被发现、加载、`beforeRun` hook 实证触发，运行时执行成功。先前 No-Go 判定因验证方法假阴性已撤销。**
+
+### ⚠️ 撤销记录：先前 No-Go 系误判
+
+2026-06-26 首次判定 No-Go，依据"`config plugins` 报 No plugins found，连官方样例也加载不了"。**该结论错误**，根因是验证方法缺陷：
+
+- 错误命令：`cline -c <p5-spike> config plugins`——误以为 `-c` 能给 `config plugins` 指定发现根目录；
+- 实际行为：`config plugins` **只扫描真实当前工作目录（cwd）的 `.cline/plugins`，不理会 `-c` 参数**；
+- 当时真实 cwd 是 `E:\cline++`（未安装插件）→ 必然 No plugins found → **假阴性**。
+
+用户用正确方式（先 `cd` 进目录再 `cline config plugins`）复测后，插件被正常发现，证伪了 No-Go 的全部核心证据。
 
 ### 环境事实
 
@@ -92,41 +102,35 @@
 | Cline CLI 版本 | 3.0.30（npm `cline` 包 `latest`，已是最新版） | registry.npmjs.org/cline/latest |
 | CLI 依赖 SDK | @cline/sdk@0.0.52 / @cline/core@0.0.52 | 同上 |
 | VS Code 扩展版本 | 3.89.2（独立版本号体系，与 CLI 无关） | VS Code Marketplace |
-| 官方文档声明 | "plugins not applicable on VSCode and JetBrains Extension for now" | docs.cline.bot/customization/plugins |
+| 模型 | deepseek-v4-flash（用户本地 cline 配置） | 实跑日志 |
 
 > 修正记录：前期曾误判"CLI 落后 89 版需升级"。实际 `cline`（CLI）与 `saoudrizwan.claude-dev`（VS Code 扩展）是两套独立版本号，3.0.30 即 CLI 最新版，无需也无法升级。
 
-### 实跑记录
+### 实跑记录（修正后）
 
 | 步骤 | 结果 | 备注 |
 |------|------|------|
-| cline plugin install p5-spike-plugin.ts | ✅ 安装成功 | 落地 `.cline/plugins/_installed/local/p5-spike-plugin.ts-0e22232320f0/` |
-| config plugins（我方插件） | ❌ No plugins found | 安装产物物理存在，但 CLI 不识别为有效插件 |
-| 手动放到官方发现根路径 `.cline/plugins/` | ❌ No plugins found | 排除"发现路径错误"假设 |
-| **官方样例 weather-metrics.ts** install + config plugins | ❌ **No plugins found** | **决定性：官方样例同样加载不了，排除我方文件问题** |
-| cline -c 实跑 verbose 日志 | ❌ 仅内置 `[hook:agent_start/end]`，无 plugin 加载 | beforeRun 未触发 |
-| handoff.md 生成 | ❌ 未生成 | registerMessageBuilder 未被装载 |
-| index.jsonl 追加 | ❌ 未追加 | 同上 |
-| session_start hook（session-start.log） | ❌ 未生成 | beforeRun 未触发 |
+| cline plugin install p5-spike-plugin.ts | ✅ 安装成功 | 工作区与全局两处均成功 |
+| **config plugins（正确 cwd）** | ✅ **Discovered plugins: p5-spike-plugin** | 全局目录下正常发现，证明发现机制工作、文件写法正确 |
+| 官方样例 weather-metrics.ts install + config plugins | ✅ Discovered plugins: weather-metrics | 之前的"加载不了"系假阴性 |
+| cline -v 实跑（插件已装载） | ✅ 正常完成会话 | deepseek-v4-flash，1 iteration |
+| **#6 session_start hook（session-start.log）** | ✅ **已生成并写入** | `[2026-06-26T12:24:03.338Z] session_start hook fired (beforeRun)` — **beforeRun hook 实证触发** |
+| #5 handoff.md 生成 | ⏳ 待实证 | 需长任务触发 compact（token > 90000）才会调用 registerMessageBuilder |
+| #5 index.jsonl 追加 | ⏳ 待实证 | 同上 |
 
-### 网络情况核查
+### Go/No-Go 判定（修正后）
 
-- cline 官方 GitHub issues 搜索 "plugin + No plugins found"：**0 条**（无公开已知 bug）。
-- 通用网络搜索：无相关命中。
-- 判断：这不是孤立 bug，而是当前 CLI 分发版 plugin 运行时发现/装载链路尚未落地的自然结果，与官方文档"暂不适用"声明一致。
+**partial Go**：
 
-### Go/No-Go 判定
+- ✅ **#6 已确认 Go**：`beforeRun`（session_start 类）hook 在 session 启动时**实证触发**并成功写出副作用文件。这直接命中 Go 标准第 4 条。
+- ✅ **插件运行时装载链路成立**：发现 → 加载 → hook 执行全链路打通，证伪了 No-Go 标准"API 无法稳定实现"。
+- ⏳ **#5 待实证**：`registerMessageBuilder` 的注册路径与 `beforeRun` 在同一 `setup`/插件对象中，hook 既已运行，messageBuilder 被装载的概率很高；但 compact 双产物（handoff.md + index.jsonl）尚未实跑触发（需构造 token > 90000 的长任务）。在补完该实证前不下最终 Go。
 
-**No-Go**，命中以下 No-Go 标准：
+**关键修正结论**：Plugin 独占能力在 **CLI 3.0.30 上运行时可用**（与之前误判相反）。ADR-002"VS Code 必须载体"约束仍是另一独立事实（VS Code 扩展无装载入口），但 CLI 路径已被证明可跑通——这恢复了 Plugin 作为运行时自动化层的技术可行性。
 
-1. **API 无法稳定实现**：`registerMessageBuilder` 在 CLI 3.0.30 上根本无法被装载，谈不上稳定介入。
-2. **无法形成稳定闭环**：compact → handoff → index 链路从第一步（插件装载）即断裂。
+### 下一步（补全 #5 实证）
 
-**关键结论**：Plugin 独占能力（`registerMessageBuilder`）目前在所有可交付载体上都无法运行——
-- VS Code 扩展：明确不支持 plugin 加载入口（ADR-002 必须载体约束）；
-- CLI 3.0.30（最新版）：有 install 命令但运行时无法发现/装载，连官方样例亦然。
-
-四重独立验证（文件写法 / 我方 install / 手动发现路径 / 官方样例）全部失败，已穷尽排查空间。退出理由为**工程性（外部能力缺失）**，非主观价值判断，符合 ADR-002 退出标准。
+构造长任务触发 compact，验证 handoff.md + index.jsonl 是否写出。**该命令需用户在真实终端执行**（cline 交互式会话需 TTY，Agent 非交互终端会报 `EBADF: bad file descriptor` 卡死，见 §7 教训 2）。
 
 ---
 
@@ -139,3 +143,33 @@
 用户选择：#5 + #6，0.5-1 天，CLI 全局安装，cline++/experiments/p5-spike/
 
 详见 [ADR-002-p5-experiment-exit-review.md](../../docs/decisions/ADR-002-p5-experiment-exit-review.md) 第三轮评审记录。
+
+---
+
+## 7. 教训记录
+
+### 教训 1（重大失误）：用错误的验证方法得出结论，导致 No-Go 误判
+
+**经过**：判定 P5 Spike No-Go 的核心证据是 `config plugins` 报 "No plugins found"。该证据是用 `cline -c <dir> config plugins` 取得的，我（执行者）**想当然地以为 `-c` 会作为 `config plugins` 的发现根目录**，但实际上 `config plugins` 只扫描真实 cwd，`-c` 对它无效。当时真实 cwd 不含插件，于是必然 No plugins found——一个纯粹由验证方法缺陷制造的**假阴性**。基于此还进一步用"官方样例也加载不了"来"交叉验证"，但那次测试同样在错误 cwd 下进行，于是假阴性被错误地当成了"决定性证据"。
+
+**后果**：写出了一份事实错误的 ADR-003（No-Go 退出），并据此暂缓了 mechanism-candidates #1–#6/#14。直到用户用正确方式（`cd` 进目录再查）复测，才暴露真相。
+
+**根因**：
+1. **未验证工具参数的真实语义**就用它取证据（假设 `-c` 影响 `config`，未读 help 确认）；
+2. **多重"独立验证"实为同一缺陷的重复**——四条证据全部依赖同一个错误前提（错误 cwd），不构成真正的独立交叉验证；
+3. **阴性结果未做对抗性自检**——得到 No plugins found 时，没有先问"会不会是我查的方式错了"，而是直接采信。
+
+**纠正纪律**：
+- 取关键证据（尤其用于下退出/否决结论）前，必须先用一个**已知应成功的对照**确认验证方法本身有效（本例：先确认官方样例在**正确方式**下能被发现，再去测我方插件）；
+- 阴性结论必须排除"测量工具/方法错误"后才能采信；
+- "多条证据"若共享同一前提，不算独立验证。
+
+### 教训 2：Agent 非交互终端无法运行 cline 交互式会话（EBADF）
+
+**现象**：在 Agent 的非交互终端执行 `cline -v "..."` 报 `error: EBADF: bad file descriptor, write`，命令挂起无响应。
+
+**原因**：cline 交互式会话需要真实终端（TTY）。Agent 的后台/非交互终端没有有效的 TTY 文件描述符，cline 向其写入时即 EBADF。
+
+**纪律**：凡需实际发起 cline 会话的命令（`cline -i` / `cline -v "..."` / 任何进入 agent loop 的调用），**必须交由用户在真实终端执行**，Agent 不代跑。Agent 只负责：安装/配置类非交互命令、目录与文件检查、结果判读。此条与 project-rules.md §约束 5（执行主体边界）同构——不在错误的执行环境做错误的事。
+
+> 备注：本项目（原 cline 增强项目）此前已花费相当篇幅约束此类"运行时/执行环境"问题，本教训应回流到相应规则层（见 handoff 后续动作）。

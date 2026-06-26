@@ -1,10 +1,26 @@
 # ADR-003: P5 Plugin Capability Spike 退出（运行时能力缺失）
 
-- **Status**: Accepted（2026-06-26）
+- **Status**: ~~Accepted~~ → **rolled-back（2026-06-26）**
 - **Date**: 2026-06-26
 - **Deciders**: 项目所有者
 - **Supersedes**: 无（承接 ADR-002 Validation Plan §实验结束硬性出口）
-- **Related**: ADR-002（项目承载形态，Validation Plan / P5 实验）、ADR-002-p5-experiment-exit-review（三轮外部评审）、experiments/p5-spike/run-p5-capability-spike.md（实跑记录）
+- **Related**: ADR-002（项目承载形态，Validation Plan / P5 实验）、ADR-002-p5-experiment-exit-review（三轮外部评审）、experiments/p5-spike/run-p5-capability-spike.md（实跑记录 §5 修正 + §7 教训）
+
+---
+
+## ⚠️ ROLLED-BACK（2026-06-26 当日撤销）
+
+**本 ADR 的 No-Go 结论是误判，已于同日撤销。保留全文用于审计（证明"曾经基于错误验证方法下过错误结论"）。**
+
+**撤销原因**：No-Go 的核心证据（`config plugins` 报 "No plugins found"，含"官方样例也加载不了"）是用 `cline -c <dir> config plugins` 取得的**假阴性**——`config plugins` 只扫描真实 cwd 的 `.cline/plugins`，不理会 `-c` 参数，而当时真实 cwd 不含插件。用户用正确方式（先 `cd` 进目录再 `cline config plugins`）复测后，插件被正常发现；进一步实跑确认 `beforeRun`（session_start 类）hook **实证触发**（`handoff/session-start.log` 写入成功）。
+
+**修正后事实**：Plugin 在 **CLI 3.0.30 运行时可用**——发现 → 加载 → hook 执行链路打通。本 ADR 全部 No-Go 论据被证伪。详见 [run-p5-capability-spike.md §5（修正后）](../../experiments/p5-spike/run-p5-capability-spike.md) 与 §7 教训 1。
+
+**后续**：P5 Spike 状态回到 partial Go（#6 已确认，#5 待 compact 实证）。最终决策待 #5 实证补完后另开 ADR-004。mechanism-candidates #1–#6/#14 的暂缓标记已撤销恢复。
+
+---
+
+> 以下为已撤销的原始内容，仅供审计。
 
 ---
 
