@@ -77,7 +77,6 @@ search-orchestrator P 级机制 active（6 条，不变）：P1 / P1.5 / P3 / P4
 | 方向 | 说明 | 优先级 |
 |------|------|--------|
 | **补全 #5 compact 双产物实证** | 用户在真实终端构造长任务触发 compact（token>90000），验证 handoff.md + index.jsonl 是否由 registerMessageBuilder 写出。命令需用户执行（TTY）。完成后据结果另开 **ADR-004**（最终 Go/No-Go） | 高 |
-| 撤回 GitHub issue 草稿 | `experiments/p5-spike/github-issue-draft.md` 基于误判（"插件加载不了"）撰写，**结论已被证伪，不应提交**。需删除或改写为"-c 参数对 config 无效"的文档澄清类反馈（若仍想反馈） | 高 |
 | ADR-004（最终决策） | #5 实证完成后撰写：若双产物成功→Plugin 作为运行时自动化层（CLI 路径）；明确 VS Code 载体约束下的交付定位 | 高（条件性） |
 | 决策文档事实审核 7 项修订 | 见更早 handoff 修订表 | 中 |
 | CSDN 博客发布 | 已写好待用户手动发布 | 中 |
@@ -95,4 +94,4 @@ search-orchestrator P 级机制 active（6 条，不变）：P1 / P1.5 / P3 / P4
 然后读 docs/handoff.md，按下面的工作内容继续。
 ```
 
-接续上下文：本会话发生一次**重大纠错**——P5 Spike 的 No-Go 结论是误判，根因是验证 `config plugins` 时误用 `-c` 参数（它只扫真实 cwd，不理会 `-c`），在错误目录下取得"No plugins found"假阴性，还把"官方样例也失败"当成伪交叉验证。用户用正确方式复测后，插件被正常发现，且 `beforeRun`（session_start）hook 实证触发（session-start.log 写入成功）——证明 **Plugin 在 CLI 3.0.30 运行时可用**。已撤销 ADR-003（标 rolled-back，保留审计），mechanism #5/#6 改"实验中"、#1-4/#14 恢复候选，两条教训回流 project-rules §约束5。**下次首要动作**：让用户在真实终端构造长任务触发 compact，验证 #5 的 handoff.md + index.jsonl 双产物是否由 registerMessageBuilder 写出；完成后据结果写 ADR-004 作最终判定。注意：① cline 交互式命令（-i/-v）必须用户在真实终端跑，Agent 跑会报 EBADF；② github-issue-draft.md 基于误判，提交前必须重写或删除。
+接续上下文：本会话发生一次**重大纠错**——P5 Spike 的 No-Go 结论是误判，根因是验证 `config plugins` 时误用 `-c` 参数（它只扫真实 cwd，不理会 `-c`），在错误目录下取得"No plugins found"假阴性，还把"官方样例也失败"当成伪交叉验证。用户用正确方式复测后，插件被正常发现，且 `beforeRun`（session_start）hook 实证触发（session-start.log 写入成功）——证明 **Plugin 在 CLI 3.0.30 运行时可用**。已撤销 ADR-003（标 rolled-back，保留审计），mechanism #5/#6 改"实验中"、#1-4/#14 恢复候选，两条教训回流 project-rules §约束5。**下次首要动作**：让用户在真实终端构造长任务触发 compact，验证 #5 的 handoff.md + index.jsonl 双产物是否由 registerMessageBuilder 写出；完成后据结果写 ADR-004 作最终判定。注意：cline 交互式命令（-i/-v）必须用户在真实终端跑，Agent 跑会报 EBADF。（基于误判的 github-issue-draft.md 已删除。）
