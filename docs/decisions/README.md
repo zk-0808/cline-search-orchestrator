@@ -30,7 +30,7 @@
 | [D-2026-06-24-search-rollback-diversity](D-2026-06-24-search-rollback-diversity.md) | 2026-06-24 | search-orchestrator | rolled-back | 回退 DiversityPenalty + R1 保底 |
 | [D-2026-06-23-search-finalscore-coupling](D-2026-06-23-search-finalscore-coupling.md) | 2026-06-23 | search-orchestrator | active | Goggle × Source Weighting 联动 FinalScore（P1.5） |
 | [D-2026-06-23-search-adopt-goggles](D-2026-06-23-search-adopt-goggles.md) | 2026-06-23 | search-orchestrator | active | 采纳 Domain Goggles（P1） |
-| [ADR-002-project-shape](ADR-002-project-shape.md) | 2026-06-20 | global | active | 项目形态：Cline 扩展层 L1/L2/L3（Update 1: 2026-06-26，Cline Plugin VS Code 支持硬约束解除） |
+| [ADR-002-project-shape](ADR-002-project-shape.md) | 2026-06-20 | global | active | 项目形态：Cline 扩展层 L1/L2/L3（Update 1: 2026-06-26，Cline Plugin VS Code 支持状态核查——扩展未集成装载入口，代码层跨形态可用） |
 | [ADR-001-handoff-compact-memory](ADR-001-handoff-compact-memory.md) | 2026-06-15 | global | active | Handoff / compact / memory 策略 |
 
 ## 维护规则

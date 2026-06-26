@@ -349,44 +349,50 @@ Implementation
 
 ---
 
-## Update 1 (2026-06-26): Cline Plugin VS Code 支持硬约束解除
+## Update 1 (2026-06-26): Cline Plugin VS Code 支持状态核查（含修正）
 
-### 事实变化
+### 事实变化（经多源核查，含矛盾证据裁定）
 
-2026-06-26 核查 Cline 官方 GitHub 文档（[sdk/examples/plugins](https://github.com/cline/cline/tree/main/sdk/examples/plugins)），发现 Context §4 记录的硬约束已解除：
+2026-06-26 核查 Cline 官方文档时发现**矛盾证据**，经深入核查后裁定如下：
 
-| 时间 | 官方文档原文 |
-|------|------------|
-| 2026-06-23（本 ADR Context §4 记录） | "This feature currently only applies to Cline SDK, CLI, and Kanban. **This feature is not applicable on VSCode and JetBrains Extension for now.**" |
-| 2026-06-26（今日核查） | "A plugin is a single file (or directory) that extends **any Cline agent — CLI, Kanban, VS Code, JetBrains**, or anything built on the Core SDK. Drop one in, get new tools, hooks, providers, or message rewriters everywhere." |
+| 来源 | 原文 | 语义层面 | 核查结果 |
+|------|------|---------|---------|
+| [sdk/examples/plugins](https://github.com/cline/cline/tree/main/sdk/examples/plugins)（GitHub，2026-06-03 更新，Cline 创建者提交） | "extends **any Cline agent — CLI, Kanban, VS Code, JetBrains**, or anything built on the Core SDK" | **SDK 设计能力范围**——plugin 代码可扩展任何基于 Core SDK 的 agent 内核 | 描述准确，但指 SDK 层 |
+| [customization/plugins](https://docs.cline.bot/customization/plugins)（docs.cline.bot） | "This feature currently only applies to Cline SDK, CLI, and Kanban. **This feature is not applicable on VSCode and JetBrains Extension for now.**" | **用户操作可用性**——`cline plugin install` 命令与 UI 入口在 VS Code 扩展中不可用 | **裁定为准**——VS Code 扩展未集成装载入口 |
+| VS Code Marketplace Cline v3.89.2（2026-06-11）CHANGELOG | 无 "plugin" 相关条目（Grep 零匹配） | **版本历史佐证**——VS Code 扩展从未集成 plugin 装载 UI | 决定性证据 |
 
-**3 天内（2026-06-23 → 2026-06-26），Cline Plugin 已支持 VS Code 和 JetBrains。** Plugin 现在是"一次写到处跑"——同一 plugin 文件同时服务 CLI / Kanban / VS Code / JetBrains / 任何基于 Core SDK 的 agent。
+**裁定结论**：Context §4 记录的硬约束**仍成立**——VS Code Cline 扩展（v3.89.2）尚未集成 plugin 装载入口。GitHub sdk/examples/plugins 描述的是 @cline/core SDK 内核的设计能力范围（plugin 代码层面确实可跨形态扩展任何基于 Core SDK 的 agent），但 VS Code 扩展的前端 UI 层尚未暴露装载入口。
+
+**准确事实**：
+- ✅ Plugin **代码层面**跨形态可用（@cline/core SDK 支持，一次写到处跑的设计成立）
+- ❌ VS Code 扩展（v3.89.2）**尚未集成 plugin 装载入口**（无 UI、无命令、CHANGELOG 无记录）
+- 实验仍需 **CLI 方式**（`npm i -g cline` + `cline plugin install`），不能在 VS Code 直接实验
 
 ### 对本 ADR 的影响
 
 | 章节 | 原内容 | Update 后状态 |
 |------|--------|--------------|
-| Context §4（VS Code 不可用硬约束） | Plugin 不适用于 VS Code / JetBrains | **已失效**——Plugin 已支持 VS Code / JetBrains |
-| Context §5（社区无实战沉淀） | SDK v0.0.51，刚推出 | 部分成立（SDK 仍 0.x，但 Plugin 已跨形态可用，社区沉淀待观察） |
-| Decision §当前默认交付形态 | Plugin 作为实验与未来迁移线（NOT 默认交付） | 不变——Plugin 仍非默认交付，但实验线前提已变 |
-| Decision §Plugin 的当前角色定位 | P5 实验目的："在 CLI / SDK 自建环境中验证 Plugin 是否值得成为未来主线" | **修正**——实验环境从 CLI 独立沙盒改为 VS Code 直接实验 |
-| Validation Plan §实验环境（硬约束） | "P5 实验**不能**在 VS Code Cline 中运行（Plugin 不支持）" | **已失效**——P5 实验可直接在 VS Code Cline 中运行 |
-| Validation Plan §最小可行 Plugin 范围 | fork custom-compaction.ts，CLI 环境跑 | 修正——fork custom-compaction.ts，**VS Code 环境跑** |
-| Validation Plan §启动步骤 | `npm i -g cline` + 独立实验仓 | 修正——VS Code Cline 直接装载 plugin，独立实验仓仍建议（隔离产物）但不强制 |
+| Context §4（VS Code 不可用硬约束） | Plugin 不适用于 VS Code / JetBrains | **仍成立**——VS Code 扩展未集成 plugin 装载入口（v3.89.2 CHANGELOG 零 plugin 条目） |
+| Context §5（社区无实战沉淀） | SDK v0.0.51，刚推出 | 部分成立（SDK 仍 0.x；plugin 代码层跨形态可用但 VS Code 扩展未开放，社区沉淀待观察） |
+| Decision §当前默认交付形态 | Plugin 作为实验与未来迁移线（NOT 默认交付） | 不变——Plugin 仍非默认交付，实验线前提未变 |
+| Decision §Plugin 的当前角色定位 | P5 实验目的："在 CLI / SDK 自建环境中验证 Plugin 是否值得成为未来主线" | 不变——实验环境仍为 CLI / SDK 自建环境 |
+| Validation Plan §实验环境（硬约束） | "P5 实验**不能**在 VS Code Cline 中运行（Plugin 不支持）" | **仍成立**——P5 实验仍需 CLI 方式，不能在 VS Code Cline 中运行 |
+| Validation Plan §最小可行 Plugin 范围 | fork custom-compaction.ts，CLI 环境跑 | 不变——fork custom-compaction.ts，CLI 环境跑 |
+| Validation Plan §启动步骤 | `npm i -g cline` + 独立实验仓 | 不变——`npm i -g cline` + 独立实验仓 |
 
 ### 对外部评审材料的影响
 
-[ADR-002-p5-experiment-exit-review.md](ADR-002-p5-experiment-exit-review.md)（2026-06-26 撰写）基于"VS Code 不可用"前提，该前提现已失效：
+[ADR-002-p5-experiment-exit-review.md](ADR-002-p5-experiment-exit-review.md)（2026-06-26 撰写）基于"VS Code 不可用"前提，该前提**经核查仍成立**：
 
 | 评审材料章节 | 原论据 | Update 后状态 |
 |-------------|--------|--------------|
-| §2.3 VS Code 不可用硬约束未解除 | 支持舍弃 | **已失效** |
-| §2.4 SDK 0.x 风险 | 支持舍弃 | 部分成立（SDK 仍 0.x，但 Plugin 跨形态可用降低此风险） |
-| §3.3 实验环境与生产环境分离 | 反对舍弃 | **已失效**（VS Code 可直接实验） |
-| §4 选项 C（CLI 独立沙盒最小验证） | 中间路径推荐 | **需修正**——改为 VS Code 直接最小验证，成本更低 |
-| §5 Q4/Q6 中间路径推荐 | C→B 组合 | 仍成立，但 C 的执行环境改为 VS Code |
+| §2.3 VS Code 不可用硬约束未解除 | 支持舍弃 | **仍成立**（VS Code 扩展 v3.89.2 未集成 plugin 装载入口） |
+| §2.4 SDK 0.x 风险 | 支持舍弃 | 仍成立（SDK 仍 0.x，且 VS Code 扩展未开放，风险未降低） |
+| §3.3 实验环境与生产环境分离 | 反对舍弃 | **仍成立**（实验环境 CLI 与生产环境 VS Code 仍分离） |
+| §4 选项 C（CLI 独立沙盒最小验证） | 中间路径推荐 | 不变——仍为 CLI 独立沙盒最小验证 |
+| §5 Q4/Q6 中间路径推荐 | C→B 组合 | 不变——C 的执行环境仍为 CLI |
 
-评审核心结论（"先做最小闭环验证再决定"）仍成立，且**验证成本下降**——无需安装 Cline CLI、无需独立沙盒、无需跨环境迁移结论。
+评审核心结论（"先做最小闭环验证再决定"）仍成立。第二轮评审基于"VS Code 已支持"的乐观假设需修正——实验环境回到 CLI 方式，验证成本未下降。
 
 ### Plugin 能力补充说明（核查所得）
 
@@ -404,9 +410,9 @@ Implementation
 
 ### 后续动作
 
-1. **本 Update 落地后**：评审材料前提已变，用户需决定是否重新评审或直接进入选项 C（VS Code 最小闭环验证）
-2. **机制清单 #1–#4 归宿**：Plugin 已支持 VS Code，#1–#4 的理想机制（plugin）可行路径恢复，不再需要"等待 Runtime 能力"暂缓标记
-3. **P5 实验环境调整**：从 CLI 独立沙盒改为 VS Code 直接实验（成本下降），独立实验仓仍建议用于产物隔离
+1. **本 Update 落地后**：评审材料前提仍成立，用户需决定是否重新评审或直接进入选项 C（CLI 最小闭环验证）
+2. **机制清单 #1–#4 归宿**：VS Code 扩展未集成 plugin 装载入口，#1–#4 的理想机制（plugin）可行路径未恢复，维持"等待 Runtime 能力"暂缓标记
+3. **P5 实验环境**：仍为 CLI 独立沙盒（`npm i -g cline` + `cline plugin install`），成本未下降
 4. **survey.md §9.1 同步**：本 Update 非 status 变更（ADR-002 仍 active），不触发 project-rules.md 约束 1/2，无需加新行
 
 ### 本 Update 不变更的内容
@@ -416,4 +422,4 @@ Implementation
 - ADR-002 §退休条件 / Review Trigger 不变（SDK v1.0+ 等仍适用）
 - ADR-002 status 仍为 active（非 superseded，非新 ADR-003）
 
-本 Update 仅记录外部事实变化（Cline Plugin 支持 VS Code）及其对本 ADR 局部章节的修正，不构成整体决策推翻。
+本 Update 记录外部事实核查（Cline Plugin VS Code 支持状态的矛盾证据裁定）及其对本 ADR 局部章节的修正，不构成整体决策推翻。
