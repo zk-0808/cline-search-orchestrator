@@ -120,6 +120,33 @@ minified 代码**可用于定位**（入口 / 调用链 / 字符串 / API / hook
 
 源由：ADR-002 Update 1→2→3→4 连续 4 次颠覆，核心命题"VS Code 扩展是否支持 plugin"翻转 3 次（不支持→支持→不支持→支持），未触发工作流审查。
 
+### 1.11 子条款：评审角色调用门控
+
+依据 [reviewer-personas.md](reviewer-personas.md)，下列场景**必须**注入对应评审角色提示词后再产出评审：
+
+| 触发条件 | 调用角色 |
+|---------|---------|
+| 写入 ADR 前 | Software Engineering Reviewer |
+| 工作流事故复盘 | Process Reviewer |
+| 连续错误模式分析 | Process Reviewer + Software Engineering Reviewer |
+| 故障复盘 | Reliability Reviewer |
+| 安全设计 | Security Reviewer |
+| API 设计 | API Reviewer |
+| 跨领域复杂评审 | 同时调用多个角色（分别输出）|
+
+**核心约束**（所有角色共享，源自 [reviewer-personas.md §1](reviewer-personas.md)）：
+
+> 如果存在成熟实践，请优先说明其名称、核心思想以及为什么适用；只有当现有实践不足时，才建议新增本地规则。
+
+输出必须区分三类：
+1. **成熟实践**——直接引用名称 + 核心思想 + 适用理由
+2. **本地扩展**——成熟实践在本项目/AI 工作流场景下的适配
+3. **创新**——成熟实践无法覆盖的部分，必须说明必要性 + 风险
+
+**禁止**：把成熟实践包装成本地创新（如把 EBSE 包装成"证据治理"）。
+
+源由：2026-06-27 外部评审反馈——AI agent 设计工作流时容易"重新发明轮子"。本次自创"证据治理"概念，实际 EBSE（Evidence-Based Software Engineering）、RCA、ADR 等已有成熟方法可直接借鉴。
+
 ---
 
 ## 2. handoff 通用触发器

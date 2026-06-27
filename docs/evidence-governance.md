@@ -286,3 +286,26 @@ ADR 之前应有 Investigation Note 记录证据链，**不直接从搜索跳到
 2. **评审二**：核心根因是"证据状态管理失败"——从证据直接跳到结论，跳过 Hypothesis；建议 Observation → Evidence → Hypothesis → Verified → Decision 状态机。
 
 两份评审共识：本框架作为上层元规则，dev-rules.md 作为执行门控，ADR 作为实际应用。三层结构不重叠。
+
+---
+
+## 14. 产源说明（成熟实践映射）
+
+依据 [reviewer-personas.md §1](reviewer-personas.md) 核心约束"优先借鉴成熟实践，非重新发明"，本框架的各组成部分产源如下：
+
+| 本框架章节 | 成熟实践 | 本地扩展（AI 工作流特殊性）| 创新部分 |
+|----------|---------|--------------------------|---------|
+| §2 证据生命周期状态机 | **EBSE（Evidence-Based Software Engineering）**——Kitchenham et al., 2004；科学方法的 Observation → Hypothesis → Experiment → Conclusion | 增加 Evidence 中间状态（区分"原始观察"与"支持假设的证据"）| 无 |
+| §2.4 Observation vs Inference 分离 | **科学方法 + RCA（Root Cause Analysis）**——观察与解释分离是 RCA 基本原则 | 无 | 无 |
+| §3 证据职责分工 | **EBSE 证据分级**——不同证据类型回答不同问题 | 针对 AI agent 调研场景的具体证据类型映射（minified/官方/Example/实测）| 无 |
+| §4 Confidence 模型 | **EBSE 证据等级** + **CER（Claim-Evidence-Reasoning）** | 简化为高/中/低三档 + ★ 标注 | 无 |
+| §5 Unknown 状态 | **科学方法**——"I don't know"是合法答案；**RCA**——未确认原因时停止而非猜测 | 显式允许 ADR 暂停于 Unknown | 无 |
+| §6 Conflict Registry | **RCA**——记录矛盾证据而非急于裁决；**ADR**——记录决策时的反对意见 | 无 | 无 |
+| §7 Decision Readiness Checklist | **ADR Methodology**——决策前的 context/problem/considered alternatives；**Definition of Ready（Scrum）** | 针对 AI agent 跳级问题的具体检查项 | 无 |
+| §8 Evidence Escalation | **RCA 5 Whys**——逐层深入；**PDCA**——Plan/Do/Check/Act 升级 | 证据类型升级路径（官方→Example→源码→实测）| 无 |
+| §9 实验优先 | **Lean Startup**——Build-Measure-Learn；**EBSE**——empirical evidence 优于 analytical reasoning | 针对 AI agent 倾向于分析 minified 代码的修正 | 无 |
+| §10 Investigation Note | **Lab Notebook / Research Log**——科学研究的实验记录簿 | 格式标准化为 Observation/Evidence/Hypothesis/Verified/Decision | 无 |
+
+**结论**：本框架**无创新部分**——所有组成部分均有成熟实践对应。本地扩展仅是"针对 AI agent 调研工作流的场景适配"（如 minified 代码风险、Confidence 简化为三档）。
+
+**反思**：本次设计过程中曾把"证据治理"当作新概念提出，实际是 EBSE + RCA + ADR Methodology 的组合应用。按 [reviewer-personas.md](reviewer-personas.md) 核心约束，应在最初就映射到 EBSE，而非自创术语。
