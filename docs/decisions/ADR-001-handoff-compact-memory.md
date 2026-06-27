@@ -99,3 +99,64 @@ Handoff-v2 Design Doc
         ↓
 Implementation
 ```
+
+---
+
+## Update 1 (2026-06-27): Capability Probe 实测计划（承接 ADR-002 Update 3 发现）
+
+### 触发背景
+
+ADR-002 Update 3（2026-06-27）完整调研 VS Code 扩展 4.0.0 原生能力后发现：VS Code 扩展代码层有完整 plugin 注册系统（`registerMessageBuilder` 等 7 个接口）+ 文件 Hook 系统（Windows `.ps1`）+ Skill 装载（6 路径）。这颠覆了 ADR-002 Update 2 发现 3「registerMessageBuilder 仍未在 VS Code 扩展实现」的错误结论，使本 ADR §Next Steps 列出的 4 项 Capability Probe 重新具备实测条件，且追加第 5 项（plugin setup 触发验证）。
+
+### 实测环境
+
+- **载体**：VS Code 扩展 4.0.0（`C:\Users\19936\.vscode\extensions\saoudrizwan.claude-dev-4.0.0`）
+- **工作区**：`e:\cline++`（或独立实验仓）
+- **执行方式**：遵循 dev-rules.md §1.2，需用户在真实终端执行 VS Code 命令；TRAE agent 负责准备文件、判读结果
+
+### Probe 项（5 项，前 4 项为本 ADR §Next Steps 原始项，第 5 项为 ADR-002 Update 3 追加）
+
+| # | Probe 项 | 实测方法 | 通过标准 | 失败处置 |
+|---|---------|---------|---------|---------|
+| 1 | VS Code 扩展是否暴露 PostCompact / 等价 hook | 在 `<workspace>/.cline/Hooks/` 或全局 hooks 目录放 `afterCompact.ps1`（Windows），触发一次 compact，检查 hook 是否执行 | hook 脚本写入日志文件 | 若文件 Hook 不支持 afterCompact 事件，检查 plugin automationEventTypes 是否含等价事件；若都不支持，#5 退回 CLI 路径 |
+| 2 | VS Code 扩展是否暴露 session_id 或等价标识 | 启动一次 task，检查 task metadata / `better-sqlite3` 数据库 / globalState 是否含 session_id | 找到稳定可读取的 session 标识 | 若无 session_id，用 task_id 替代（`cline.reconstructTaskHistory` 命令暗示有 task 历史） |
+| 3 | VS Code 扩展的 compact 是否可程序化调用 | 检查 commands 列表 / dist/extension.js 是否有触发 compact 的 API | 找到可程序化触发的方式 | 若不可程序化调用，#5 依赖 token 自然累积触发 compact（与 CLI 路径相同） |
+| 4 | VS Code 扩展的 condense 消息是否可被外部 watcher 检测 | 用 `chokidar` 或 PowerShell `FileSystemWatcher` 监听 task 存储目录，触发 compact，检查是否产生可检测的文件变化 | watcher 能在 compact 发生时收到事件 | 若不可检测，#5 退回 plugin `registerMessageBuilder` 路径（Probe 5 验证） |
+| 5 | **手动放 plugin 文件到 `<workspace>/.cline/<pluginName>/` 能否触发 VS Code 扩展执行 setup 函数** | 创建最小 plugin（`.js`/`.ts` + `managed.json` manifest 声明 capabilities），放 `<workspace>/.cline/test-plugin/`，重启 VS Code / reload window，检查 plugin 是否被发现并执行 setup（注册的 `registerMessageBuilder` / `registerTool` 等是否生效）| setup 函数执行（日志写入 / 注册的工具可用 / 注册的 messageBuilder 在 compact 时触发）| 若不触发，检查是否需要通过 `cline.marketplaceButtonClicked`（Customize 按钮）显式装载；若仍不触发，#5 退回 CLI 路径 |
+
+### Probe 5 的关键性
+
+Probe 5 是 ADR-002 Update 3 追加的核心验证项——若通过，则 #5（compact 双产物）可在 VS Code 扩展直接可用，无需 CLI 载体，ADR-004 的"实验环境-生产环境错位"问题解除。若失败，#5 维持 CLI 路径，ADR-004 恢复条件不变。
+
+### Probe 执行顺序
+
+1. **Probe 5 优先**（最高价值——直接决定 #5 能否在 VS Code 可用）
+2. Probe 1（PostCompact hook）
+3. Probe 2（session_id）
+4. Probe 4（condense 消息 watcher）
+5. Probe 3（compact 程序化调用）
+
+### Probe 5 实测准备清单（TRAE agent 准备，用户执行）
+
+1. 创建 `<workspace>/.cline/test-plugin/` 目录
+2. 准备 `managed.json`（manifest 声明 capabilities，参考 dist/extension.js 第 543 行的 capability 检查逻辑）
+3. 准备最小 `index.js`（或 `index.ts`）plugin 文件，setup 函数：
+   - 调用 `registerMessageBuilder` 注册一个空 messageBuilder（验证注册接口可用）
+   - 调用 `registerTool` 注册一个测试工具（验证注册接口可用）
+   - 写入日志文件 `plugin-loaded.log`（验证 setup 执行）
+4. 用户在 VS Code 中 reload window（`Ctrl+Shift+P` → `Developer: Reload Window`）
+5. 检查 `plugin-loaded.log` 是否生成
+6. 在 Cline 对话中检查测试工具是否可用
+7. 触发一次 compact（长对话），检查 messageBuilder 是否被调用
+
+### 后续动作
+
+- Probe 5 通过 → ADR-004 恢复条件 2 满足，P5 Spike 可重启（在 VS Code 扩展环境）
+- Probe 5 失败 → 维持 ADR-004 deferred 状态，#5 退回 CLI 路径
+- Probe 1-4 结果 → 更新 Handoff-v2 Design Doc 的实现细节
+
+### 本 Update 不变更的内容
+
+- ADR-001 整体方向（A 复用 Cline Compact + B' 自动分级 Handoff + D' 可版本化索引层）不变
+- ADR-001 status 仍为 Accepted
+- 本 Update 仅追加 Probe 实测计划，不构成方向调整

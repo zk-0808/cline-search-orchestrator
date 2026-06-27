@@ -423,3 +423,286 @@ Implementation
 - ADR-002 status 仍为 active（非 superseded，非新 ADR-003）
 
 本 Update 记录外部事实核查（Cline Plugin VS Code 支持状态的矛盾证据裁定）及其对本 ADR 局部章节的修正，不构成整体决策推翻。
+
+---
+
+## Update 2 (2026-06-27): VS Code 扩展代码层 hook/plugin 系统核查（纠正 Update 1 核查方法）
+
+### 核查背景
+
+用户质疑 Update 1「VS Code Plugin Hook 不可用」结论的核查方法（dev-rules.md §1.3 阴性结论须先排除验证方法错误）。Update 1 仅基于 3.89.2 CHANGELOG 零 plugin 条目下阴性结论，未做代码层核查。本 Update 补充代码层核查。
+
+### 核查方法纠正
+
+| 维度 | Update 1 方法 | Update 2 方法 |
+|------|--------------|--------------|
+| 文件定位 | Glob/LS（均失效：Glob 零命中，LS 40000 字符截断）| PowerShell `Get-ChildItem -Recurse`（可靠）|
+| 证据来源 | CHANGELOG 条目 + 官方文档 | dist/extension.js 代码层 Grep + 官方文档 |
+| 版本范围 | 仅 3.89.2 | 3.89.2 + **4.0.0**（Update 1 遗漏，4.0.0 于 2026-06-25 22:42 安装）|
+
+### 关键发现
+
+**发现 1：VS Code 扩展代码层有完整 hook 系统**
+
+4.0.0/dist/extension.js 代码层核查（Grep + PowerShell Select-String）证实：
+
+- 第 3351 行：`HookDiscoveryCache` / `findHookScripts` / `hasHook` / `createWithStreaming`——完整的 hook 发现与执行系统
+- 第 2048 行：hook 类型包括 `beforeRun` / `afterRun` / `beforeModel` / `beforeTool` / `afterTool` / `agent_start` / `tool_call` / `preToolUse`；日志环境变量 `CLINE_HOOKS_LOG_PATH` + `hooks.jsonl`
+- 第 1949 行：生命周期 hook `beforeRun` / `afterRun` / `beforeModel`
+
+**发现 2：VS Code 扩展代码层有 plugin 结构**
+
+4.0.0/dist/extension.js 第 475 行（及第 1548 行重复）：
+
+```javascript
+function DGu(t){
+  let e=t.pluginName??RGu,
+      r=tie.default.join(t.workspacePath,".cline",e);
+  return {
+    pluginName:e, pluginPath:r,
+    workflowsPath:tie.default.join(r,"workflows"),
+    skillsPath:tie.default.join(r,"skills"),
+    bundleCachePath:tie.default.join(r,"cache","bundle.json"),
+    manifestPath:tie.default.join(r,"managed.json"),
+    rulesFilePath:tie.default.join(r,"ru...
+```
+
+VS Code 扩展代码层有 `pluginName` 概念，plugin 结构为 `<workspace>/.cline/<pluginName>/{skills,workflows,cache/bundle.json,managed.json,rules}`。
+
+**发现 3：registerMessageBuilder 仍未在 VS Code 扩展实现**
+
+Grep `registerMessageBuilder|messageBuilder` 命中均为 zod schema 解析代码，非真实实现。Update 1「registerMessageBuilder 是 Plugin 独占」结论仍成立。
+
+**发现 4：4.0.0 已安装但 Update 1 遗漏**
+
+4.0.0 `installedTimestamp: 1782528118874` → 2026-06-25 22:42（北京时间）。Update 1 (2026-06-26) 核查时 4.0.0 已存在 1 天，但仅报告 3.89.2。4.0.0 package.json 仍零 plugin 关键字，commands 列表无 `cline.plugin.*`，结论不变，但核查范围有遗漏。
+
+**发现 5：Update 1 证据来源记录有误**
+
+Update 1 引用「globalState.json clineVersion=3.89.2」——本地核查 globalState.json 不存在。版本号 3.89.2 本身准确（扩展目录确有 `saoudrizwan.claude-dev-3.89.2`），但证据来源应为扩展目录名，非 globalState.json。
+
+### 对 Update 1 能力边界表的修正
+
+| 能力 | Update 1 结论 | Update 2 修正 |
+|------|--------------|--------------|
+| Plugin Hook（typed runtime callback） | VS Code 不可用 | **代码层有 typed runtime hook**（beforeRun/afterRun/beforeModel/beforeTool/afterTool），UI 层无装载命令，可用性待实测 |
+| 文件 Hook（.cline/hooks/*） | 部分支持（9 种文件事件） | **代码层有完整 hook 发现系统**（HookDiscoveryCache/findHookScripts），配置方式待实测 |
+| registerMessageBuilder | Plugin 独占 | **仍成立**（VS Code 扩展未实现）|
+| plugin 装载入口 | VS Code 未集成 | **UI 层无命令，代码层有 plugin 结构**（`.cline/<pluginName>/`），手动放文件可能触发，待实测 |
+
+### 核心结论修正
+
+Update 1「VS Code 扩展未集成 plugin 装载入口」在 **UI 层面仍成立**（无 `cline plugin install` 命令），但**代码层面不准确**——VS Code 扩展代码层有：
+
+1. 完整的 hook 系统（typed runtime callback）
+2. plugin 结构（`.cline/<pluginName>/`）
+3. skill 装载路径（`.cline/<pluginName>/skills/`）
+
+**手动放 plugin 文件到 `<workspace>/.cline/<pluginName>/` 可能触发 VS Code 扩展装载**——这是 Update 1 未探索的路径，需 Capability Probe 实测。
+
+### 后续动作
+
+1. **启动 ADR-001 Capability Probe**：验证 VS Code 扩展的 hook/plugin 可用性（手动放文件到 `.cline/<pluginName>/`）
+2. **mechanism-candidates #6/#7 补充备注**：VS Code 扩展代码层有 beforeRun/agent_start hook，#6 可能在 VS Code 直接可用
+3. **ADR-004 恢复条件补充**：代码层有 plugin 结构，手动放文件可能触发，是恢复路径之一
+4. **核查方法教训**：Windows 文件核查必须用 PowerShell `Get-ChildItem -Recurse`，Glob/LS 不可靠（Glob 零命中，LS 截断）
+
+### 本 Update 不变更的内容
+
+- ADR-002 整体方向不变
+- ADR-002 status 仍为 active
+- Update 1 的 registerMessageBuilder 独占性结论仍成立
+- #5 仍需 plugin（registerMessageBuilder 独占）
+
+---
+
+## Update 3 (2026-06-27): VS Code 扩展 4.0.0 原生能力完整调研（纠正 Update 2 发现 3）
+
+### 核查背景
+
+用户反馈 Update 1/2 调查方向偏离——"VS Code 扩展的原生 commands/MCP/skill 都是应该的调研对象，之前却偏离到 CLI"。Update 2 仅核查 plugin 结构和 hook 系统，未完整调研 VS Code 扩展本身的原生能力。本 Update 补充完整调研。
+
+### 核查对象（明确）
+
+- **载体**：`C:\Users\19936\.vscode\extensions\saoudrizwan.claude-dev-4.0.0`（installedTimestamp 1782528118874 → 2026-06-25 22:42 北京时间）
+- **不再偏离到 CLI**：CLI（3.0.31）是独立载体，本次核查仅针对 VS Code 扩展
+
+### 核查方法
+
+- `package.json` 完整读取（18188 字节）
+- `skills-lock.json` 完整读取（245 字节）
+- `dist/extension.js`（22MB minified）Grep + PowerShell `Select-String` / `Substring` 精准提取
+- 遵循 dev-rules.md §1.3 教训：Windows 文件核查用 PowerShell `Get-ChildItem -Recurse`
+
+### VS Code 扩展 4.0.0 原生能力完整清单
+
+#### A. Commands（package.json 暴露 20 个，零 plugin/hook/skill 管理命令）
+
+| 类别 | 命令 | 说明 |
+|------|------|------|
+| 侧边栏（6）| `cline.plusButtonClicked` / `cline.mcpButtonClicked` / `cline.marketplaceButtonClicked` / `cline.historyButtonClicked` / `cline.accountButtonClicked` / `cline.settingsButtonClicked` | New Task / MCP Servers / Customize / History / Account / Settings |
+| Cline 类（14）| `cline.addToChat` / `cline.addTerminalOutputToChat` / `cline.focusChatInput` / `cline.generateGitCommitMessage` / `cline.abortGitCommitMessage` / `cline.explainCode` / `cline.improveCode` / `cline.jupyterGenerateCell` / `cline.jupyterExplainCell` / `cline.jupyterImproveCell` / `cline.openWalkthrough` / `cline.reconstructTaskHistory` / `cline.dev.createTestTasks`(dev) / `cline.dev.expireMcpOAuthTokens`(dev) | 编辑器/终端/Git/Jupyter 集成 + 任务历史重建 |
+
+**关键观察**：零 `cline.plugin.*` 命令，零 `cline.hook.*` 命令，零 `cline.skill.*` 命令，零 `cline.workflow.*` 命令。
+
+#### B. Skill 装载（代码层自动发现 6 个路径）
+
+`dist/extension.js` 第 2649 行（minified）：
+
+```javascript
+function u1n(t){return[
+  {path:sY.join(t,MNt.clineruleSkillsDir),source:"project"},  // <workspace>/.clinerules/skills
+  {path:sY.join(t,MNt.clineSkillsDir),source:"project"},      // <workspace>/.cline/skills
+  {path:sY.join(t,MNt.claudeSkillsDir),source:"project"},     // <workspace>/.claude/skills
+  {path:sY.join(t,MNt.agentsSkillsDir),source:"project"},     // <workspace>/.agents/skills
+  {path:C7d(),source:"global"},                                // ~/.cline/skills
+  {path:I7d(),source:"global"}                                 // ~/.agents/skills
+]}
+MNt={
+  clineruleSkillsDir:".clinerules/skills",
+  clineSkillsDir:".cline/skills",
+  claudeSkillsDir:".claude/skills",
+  agentsSkillsDir:".agents/skills"
+}
+```
+
+**VS Code 扩展原生支持 skill 装载**——放 SKILL.md 文件到上述任一路径即可被自动发现，**无需 UI 命令**。`skills-lock.json` 引用 `cline/sdk-skill` github（skillPath: `skill/cline-sdk/SKILL.md`）。
+
+#### C. 文件 Hook 系统（代码层完整，Windows 支持 .ps1）
+
+`dist/extension.js` 第 3351 行（minified）：
+
+```javascript
+dQ=class t{
+  static async findHookScripts(e){
+    let r=[];
+    for(let a of await Swe())  // getAllHooksDirs
+      r.push(t.findHookInHooksDir(e,a));
+    // ...
+  }
+  static async findHookInHooksDir(e,r){
+    return process.platform==="win32"?t.findWindowsHook(e,r):t.findUnixHook(e,r)
+  }
+  static async findWindowsHook(e,r){
+    let i=KGn.default.join(r,`${e}.ps1`);  // Windows: <hooksDir>/<eventName>.ps1
+    if(await t.isHookFile(i,e))return i
+  }
+  static isGlobalHooksDir(e){
+    return/[/\\][Cc]line[/\\][Hh]ooks/i.test(e)  // 路径含 /cline/Hooks
+  }
+}
+```
+
+**VS Code 扩展原生支持文件 Hook**：
+- Windows：`<hooksDir>/<eventName>.ps1`
+- Unix：`<hooksDir>/<eventName>` 无扩展名
+- 全局 hooks 目录：路径匹配 `/cline/Hooks/i`
+- 工作区 hooks 目录：通过 `getWorkspaceHooksDirs` 获取
+- **放文件即可被发现，无需 UI 命令**
+
+#### D. Plugin 注册系统（代码层完整，UI 未暴露）⚠️ 颠覆 Update 2 发现 3
+
+`dist/extension.js` 第 543 行（minified）：
+
+```javascript
+let s = {
+  tools: [], commands: [], rules: [], messageBuilder: [],
+  providers: [], automationEventTypes: [], mcpServers: []
+};
+let u = {
+  registerTool: d => s.tools.push(d),
+  registerCommand: d => s.commands.push(d),
+  registerRule: d => {/* 需 manifest.capabilities "rules" */},
+  registerMessageBuilder: d => s.messageBuilder.push(d),
+  registerProvider: d => s.providers.push(d),
+  registerAutomationEventType: d => {/* 需 "automationEvents" capability */},
+  registerMcpServer: d => {/* 需 "mcp" capability，metadata.source="plugin" */}
+};
+// plugin 文件类型: [".js", ".ts"]
+// automation event types: agent_start, agent_resume, ...
+await o.setup?.(u, c);  // 调用 plugin 的 setup 函数注册能力
+```
+
+**VS Code 扩展代码层有完整 plugin 注册系统**，包括：
+- `registerTool` / `registerCommand` / `registerRule` / `registerMessageBuilder` / `registerProvider` / `registerAutomationEventType` / `registerMcpServer`
+- plugin 文件类型：`.js` 或 `.ts`
+- plugin 需要 manifest 声明 capabilities
+- 通过 setup 函数注册能力
+
+#### E. Plugin install/uninstall 代码层存在（UI 未暴露）
+
+`dist/extension.js` 第 3803 行（install）+ 第 2060 行（uninstall）：
+
+```javascript
+async function Mch(t, e) {
+  let [r] = e;
+  if (!r) throw new Error("Marketplace plugin install args must start with a plugin source.");
+  let i = await W9o({source: r}), ...
+  return ET.create({id:t.id, type:t.type, status:"installed", ...})
+}
+async function SOd(t, e={}) {
+  // Plugin marketplace uninstalls require a plugin name.
+  let a = await Kvn({name:i, workspaceRoot:e.workspaceRoot});
+  ...
+}
+```
+
+代码层有 `Marketplace plugin install` / `uninstall` 函数，但 `package.json` 的 20 个 commands 中未暴露。可能通过 `cline.marketplaceButtonClicked`（Customize 按钮）触发，待实测。
+
+#### F. MCP 集成
+
+- 依赖：`@modelcontextprotocol/sdk@^1.25.1`
+- 命令：`cline.mcpButtonClicked`（打开 MCP Servers 面板）
+- 配置文件：`cline_mcp_settings.json`（路径待实测）
+- OAuth 管理：`cline.dev.expireMcpOAuthTokens`（dev mode）
+- plugin 可通过 `registerMcpServer` 注入 MCP server（metadata.source="plugin"）
+
+#### G. 其他原生能力
+
+- **gRPC 通信**：`@grpc/grpc-js` / `@grpc/proto-loader` / `nice-grpc` / `grpc-health-check`
+- **浏览器自动化**：`chrome-launcher` / `puppeteer-core` / `puppeteer-chromium-resolver`
+- **本地数据库**：`better-sqlite3`（task history 存储）
+- **文件 watcher**：`chokidar@^4.0.1`（可能与 hook/plugin 装载触发相关）
+- **git 集成**：`simple-git`
+- **端点配置**：`~/.cline/endpoints.json`（ClineEndpoint 类）
+- **Walkthrough**：5 步引导（step1.md ~ step5.md）
+
+### 对 Update 1/2 结论的修正
+
+| 结论 | Update 1/2 | Update 3 修正 |
+|------|-----------|--------------|
+| registerMessageBuilder 是 Plugin 独占 | Update 2 发现 3：仍成立 | **错误**——VS Code 扩展代码层第 543 行有 `registerMessageBuilder` 注册接口，是 plugin 注册系统的一部分 |
+| VS Code 扩展未集成 plugin 装载入口 | Update 1：仍成立（UI 层）| **UI 层仍成立**，但代码层有 `Mch` install / `SOd` uninstall 函数，可能通过 `cline.marketplaceButtonClicked` 触发，待实测 |
+| #5 仍需 plugin（registerMessageBuilder 独占）| Update 2：仍成立 | **需重新评估**——VS Code 扩展代码层有 registerMessageBuilder，若手动放 plugin 文件能触发 setup，则 #5 可能在 VS Code 直接可用 |
+| 文件 Hook 可用性 | Update 2：待实测 | **确认可用**——代码层有 `findWindowsHook`（.ps1）+ `isGlobalHooksDir`（/cline/Hooks）+ `getWorkspaceHooksDirs`，放文件即可被发现 |
+| Skill 装载 | Update 2：未完整调研 | **确认可用**——6 个路径（4 项目级 + 2 全局级），放 SKILL.md 即可被发现 |
+
+### 对 mechanism-candidates 的影响
+
+| # | 经验 | Update 3 影响 |
+|---|------|--------------|
+| 5 | compact 双产物（`registerMessageBuilder`）| **可能不需要 CLI 载体**——VS Code 扩展代码层有 registerMessageBuilder，需 Capability Probe 实测手动放 plugin 文件能否触发 setup |
+| 6 | session_start hook | **确认 VS Code 扩展可用**——文件 Hook（.ps1）+ plugin automation events（agent_start/agent_resume）双路径 |
+| 7 | Windows 不支持 Cline 早期 Hook | **可标已退休**——VS Code 扩展代码层有 Windows hook 支持（`.ps1`），原生可用 |
+
+### 核心结论
+
+Update 2 发现 3「registerMessageBuilder 仍未在 VS Code 扩展实现」**错误**——Grep `registerMessageBuilder` 命中 40 次中，第 543 行是 plugin 注册系统的真实实现，非 zod schema 解析。VS Code 扩展代码层有完整的 plugin 注册系统，包括 `registerMessageBuilder`。
+
+**新核心问题**：手动放 plugin 文件（`.js`/`.ts`）到 `<workspace>/.cline/<pluginName>/` 能否触发 VS Code 扩展执行其 setup 函数？这是 #5 能否在 VS Code 直接可用的关键，需 Capability Probe 实测。
+
+### 后续动作
+
+1. **启动 ADR-001 Capability Probe**（最高优先级）：验证手动放 plugin 文件能否触发 setup 函数执行（registerMessageBuilder 注册）
+2. **mechanism-candidates #5 备注修正**：从"仍需 plugin"改为"VS Code 扩展代码层有 registerMessageBuilder，待 Capability Probe 实测"
+3. **mechanism-candidates #7 状态调整**：可标已退休（VS Code 扩展代码层有 Windows hook 支持）
+4. **ADR-004 恢复条件 2 补充**：手动放 plugin 文件可能触发 setup，是恢复路径之一（实测前保留 deferred）
+
+### 本 Update 不变更的内容
+
+- ADR-002 整体方向（薄 Skills + 单点 WebSearch MCP + 经验文档 + Plugin 实验线）不变
+- ADR-002 status 仍为 active
+- ADR-002 §项目定位（L1/L2/L3 三层）不变
+- ADR-002 §退休条件 / Review Trigger 不变
+
+本 Update 记录 VS Code 扩展 4.0.0 原生能力完整调研结果，纠正 Update 2 发现 3 的错误结论（registerMessageBuilder 在 VS Code 扩展代码层有实现），不构成整体决策推翻。
