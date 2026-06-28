@@ -53,7 +53,7 @@
 
 ## E 盘写权限记录
 
-本会话中 E 盘的全部 `writeFileSync` 返回 `EPERM`。解决：用 `cmd /c copy` 或编辑器工具写 C 盘路径。
+本会话中 E 盘的全部 `writeFileSync` 返回 `EPERM`。解决：用 `cmd /c copy` 或编辑器工具写 C 盘路径。（cline环境）
 
 ---
 

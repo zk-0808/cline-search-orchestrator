@@ -234,7 +234,21 @@ copy /y e:\cline++\handoff-plugin\README.md %USERPROFILE%\.cline\plugins\install
 | `plugins/_installed/local/<file>.ts`（单文件 SDK 安装）| 无法验证（已清除）| 未知 |
 | `plugins/_installed/remote/<file>.ts`（远程单文件安装）| 无法验证（已清除）| 未知 |
 
-### 9.3 假设
+### 9.3 根因（2026-06-28 确认）
+
+VS Code 扩展 4.0.0 的 `dist/extension.js` **缺失 Plugin sandbox bootstrap 代码**（`plugin-sandbox-bootstrap.ts` 未被编译到 bundle 中），导致 `importPluginModule` 无法在 sandbox 子进程中执行 Plugin 的 `setup()`。
+
+**Workaround**：将 CLI 3.0.31 的 `bootstrap` 和 `node_modules` 依赖复制到 VS Code 扩展的 `dist/` 目录，即可使 Plugin 正常加载。
+
+**验证结果**（2026-06-28 实测）：
+- CLI 3.0.31：`setup()` ✅ 原生可用
+- VS Code 4.0.0（原始）：`setup()` ❌ bootstrap 缺失
+- VS Code 4.0.0（workaround）：`setup()` ✅ 复制 bootstrap + node_modules 后可用
+- U1（模块解析能否工作）✅ 已验证
+- U2（依赖能否解析）✅ 已验证
+- `build()` / `registerMessageBuilder` 在 compact 事件时被调用 ✅ 产出 6 个 handoff.md + 4 条 index.jsonl
+
+### 9.4 假设
 
 1. **UI 显示≠Agent 加载**：Customize 面板的"已加载"可能只是"已发现"状态，并非"已在 Agent 运行时的 sandbox 中激活"
 2. **4.0.0 扩展可能不含完整 Plugin sandbox 系统**：`extension.js` 22.5MB 被完全压缩，搜索 `loadSandboxedPlugins` 无结果（可能被 minifier 重命名或代码被摇树优化移除）
