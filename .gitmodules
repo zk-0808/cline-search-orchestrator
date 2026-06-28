@@ -1,0 +1,3 @@
+[submodule "handoff-plugin"]
+	path = handoff-plugin
+	url = https://github.com/zk-0808/cline-plugin-install.git
