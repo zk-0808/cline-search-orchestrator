@@ -198,3 +198,39 @@
 - **Remaining Unknown** → 科学方法"I don't know"合法答案
 
 无创新部分。
+
+---
+
+## Update 6 纠正标注（2026-06-28）
+
+> 来源：[ADR-002 Update 6](ADR-002-project-shape.md) — VS Code 扩展 plugin sandbox bootstrap 缺失根因确认。
+> 配套：[investigation-note-vscode-bootstrap-missing.md](investigation-note-vscode-bootstrap-missing.md) — 完整证据链。
+
+### V3 纠正
+
+**原 V3 结论**："VS Code 扩展**加载并执行**了全局 plugin store 中的 plugin——用户报告 p5-spike-plugin 和 weather-metrics '已经被加载'。"
+
+**纠正**：**过度推断**。Customize UI 显示 "Installed" 仅表示 `discoverPluginModulePaths()` 发现了文件（UI 层发现），不等于 `loadSandboxedPlugins()` 成功启动了 sandbox 子进程（运行时加载）。根因：VS Code 扩展 4.0.0 esbuild 未输出 `plugin-sandbox-bootstrap.js`，导致 sandbox 子进程无法启动，`setup()` 永不执行。
+
+**实测验证**：
+- CLI 3.0.31 中 `setup()` 成功执行（marker 时间差 11ms）
+- VS Code 扩展中 `setup()` 不执行（debug log 和 marker 均不出现）
+- 4 类独立证据交叉验证（源码分析 + bundle grep + CLI 对照 + 实测）
+
+### D2 纠正
+
+**原 D2**："VS Code 不可用硬约束**解除**——#5 可通过 CLI 全局安装后在 VS Code 扩展直接可用。"
+
+**纠正**：**回退**。VS Code 扩展因 bootstrap 缺失不可用，仅 CLI 可用。Workaround 后 VS Code 扩展可用（复制 bootstrap.js + @cline/shared + @cline/core + jiti 到扩展目录），但非官方支持路径。
+
+**Workaround 验证**（2026-06-28）：
+- 复制 `plugin-sandbox-bootstrap.js` 到 `dist/extensions/`
+- 复制 `@cline/shared`、`@cline/core`、`jiti` 到 `node_modules/`
+- `setx CLINE_PLUGIN_IMPORT_TIMEOUT_MS 30000`
+- Result：`setup()` 成功执行，Phase 2 全链路 7 次 compact 事件均捕获
+
+### D3 纠正
+
+**原 D3**："ADR-004 恢复条件 2**满足**——#5 不再依赖 CLI 载体，VS Code 扩展环境直接可用。"
+
+**纠正**：**需重新评估**。恢复条件 2 在 workaround 下满足（VS Code 扩展可运行 plugin），但依赖非官方补丁。正式路径仍需 Cline 官方修复 bootstrap 打包问题。

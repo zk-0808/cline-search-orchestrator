@@ -1,59 +1,65 @@
-# Handoff — Handoff Plugin VS Code 扩展加载故障排查
+# Handoff — Handoff Plugin 全链路验证（Phase 2 通过 + VS Code Workaround）
 
 ## 本会话决策
 
 | 决策 | 状态 |
 |------|------|
-| Plugin Sandbox 没有文件系统沙箱 — `SubprocessSandbox` 只是 `node` 子进程 | ✅ 源码确认 |
-| 之前\"fs.writeFileSync 被 sandbox 拦截\"的根因是目录不存在 + 缺 try-catch | ✅ 已修正 |
-| Phase 2 写文件逻辑已实现（handoff.md + index.jsonl） | ✅ 已完成 |
-| VS Code 扩展 4.0.0 的 Customize UI 可发现 Plugin 但 setup() 不执行 | ❌ 未解 |
-| 安装到 `plugins/_installed/` 标准和 `plugins/installed/` 均无效 | ❌ 未解 |
-| UI toggle 手动开关也未触发 setup() | ❌ 未解 |
+| VS Code 扩展 4.0.0 plugin 不执行的根因：`plugin-sandbox-bootstrap.js` 缺失于 dist/ | ✅ 4 类证据交叉确认（[Update 6](decisions/ADR-002-project-shape.md)） |
+| ALo 特性门控不是阻塞原因（plugins 默认开启） | ✅ 源码确认 |
+| CLI 3.0.31 中 setup() 成功执行 | ✅ 实测（marker 11ms delta） |
+| VS Code workaround 成功（复制 bootstrap + 依赖到扩展目录） | ✅ 实测（setup() 执行确认） |
+| Phase 2 全链路验证通过：7 次 compact 事件，handoff.md + index.jsonl 双产物正确写入 | ✅ 实测 |
+| collectTouchedFiles 质量问题已修复（FILEPATH_RE regex） | ✅ 用户修复 |
 
 ## 本会话净变化
 
-### 1. Plugin Phase 2 代码实现
+### 1. 根因确认（[ADR-002 Update 6](decisions/ADR-002-project-shape.md)）
 
-`handoff-plugin/src/index.ts` skeleton(24行) → 完整 Phase 2(146行)：
-- `setup()`：创建 `~/.cline/data/handoff/` 目录 + 写 `plugin-loaded.marker`
-- `build()`：调用 `shouldCompact()`，compact 时写 handoff.md + index.jsonl
-- 全路径 try-catch 包裹，失败不阻断对话
+VS Code 扩展 4.0.0 的 esbuild 将 plugin loading 代码内联进 `dist/extension.js`，但未输出 `plugin-sandbox-bootstrap.js` 作为独立文件。
 
-### 2. 架构参考文档
+因果链：`loadSandboxedPlugins()` → `resolveBootstrap()` → 5 个候选路径全部失败 → jiti fallback 失败 → sandbox 子进程无法启动 → 4000ms 超时 → `setup()` 永不执行。
 
-`docs/refs/handoff-plugin-architecture.md` — 10 章，记录了 Plugin Sandbox 架构、生命周期、关键路径、项目约定、RPC 协议、**§9 关键未解问题**。
+CLI 构建正确输出了 bootstrap（`@cline/core/dist/extensions/`），因此 CLI 中 plugin 正常。
 
-### 3. 源码分析关键发现
+### 2. VS Code Workaround
 
-- `SubprocessSandbox` 无文件系统拦截（纯 `child_process.spawn()`）
-- Plugin 安装到 `_installed/`（`plugin-install.ts:104`）
-- Plugin 发现扫描 `plugins/` 全部子目录（`paths.ts:498`）
-- VS Code 扩展 4.0.0 bundle 22.5MB，`loadSandboxedPlugins` 未搜到
-- `global-settings.json` 有陈旧 `disabledPlugins`，已清除
+步骤（已验证）：
+1. 复制 `plugin-sandbox-bootstrap.js`（从 CLI `@cline/core/dist/extensions/`）到扩展 `dist/extensions/`
+2. 复制 `@cline/shared`、`@cline/core`、`jiti` 包到扩展 `node_modules/`
+3. `setx CLINE_PLUGIN_IMPORT_TIMEOUT_MS 30000`
+4. Reload VS Code window → setup() 执行确认
 
-### 4. 测量参数
+### 3. Phase 2 全链路验证
 
-- setup() 不执行（debug log 和 marker 均不出现）
-- UI 显示正常，toggle 手动开关无效
-- `plugins/installed/` 和 `plugins/_installed/` 均无效
+| 验证项 | 结果 |
+|--------|------|
+| setup() 执行 | ✅ marker 写入 |
+| registerMessageBuilder 注册 | ✅ detect-compact builder 注册 |
+| build() 被调用 | ✅ 7 次 compact 事件捕获 |
+| shouldCompact() 判定 | ✅ 正确识别 token 超阈值 |
+| handoff.md 写入 | ✅ 7 个文件（`~/.cline/data/handoff/`） |
+| index.jsonl 追加 | ✅ 7 条记录 |
+| collectToolNames() | ✅ 正确提取工具名 |
+| collectTouchedFiles()（修复后）| ✅ FILEPATH_RE 过滤非路径字符串 |
+
+### 4. 代码改进（用户执行）
+
+- `collectTouchedFiles()`：原版用 `value.includes("/")` 匹配含 `/` 的源码文本 → 71KB 大文件。修复为 `FILEPATH_RE` regex（`/^[a-zA-Z]:(?:[/\\]|$)|^[/~]/`）+ `block.name === "editor"` 专项检查
+- 架构文档 §9.3 已更新
 
 ## 未完成项 / 后续动作
 
 | 方向 | 说明 | 优先级 |
 |------|------|--------|
-| **排查 VS Code 扩展 Plugin 加载机制** | 搜索 GitHub Issues / 社区 / 源码，确认 4.0.0 是否支持 Plugin 加载 | **高** |
-| **确认 Plugin 系统是否在 4.0.0 中可用** | 可能 4.0.0 去掉了 sandbox 或仅在 CLI 可用 | **高** |
-| 重试 `cline plugin install`（找 npm 完整路径） | 之前因 ENOENT npm 失败 | 中 |
-| Phase 3 index.jsonl 字段补齐 | summary + key_terms + decision_count | 低 |
+| **决策抽取中文化** | `generateHandoffContent` 仅匹配英文关键字（decision/accept/reject 等），需加中文表达 | 中 |
+| **index.jsonl file_count** | `generateIndexEntry` 中 `file_count: 0` 硬编码，应传 `files.length` | 低 |
+| **测试产物清理** | `C:\handoff-plugin-debug.log` + 7 个测试 handoff.md + index.jsonl 旧记录 | 低 |
+| **Git commit** | 本会话所有产出（plugin 源码 + 文档 + investigation notes）需提交 | 中 |
+| **Cline 官方 Issue** | bootstrap 缺失是否已有 Issue / 是否需报告 | 低 |
 
 ## 权威源
 
-[handoff-plugin-architecture.md](refs/handoff-plugin-architecture.md)、[design-handoff-plugin.md](design-handoff-plugin.md)、[dev-rules.md](dev-rules.md)、[project-rules-search-orchestrator.md](project-rules-search-orchestrator.md)
-
-## E 盘写权限记录
-
-本会话中 E 盘的全部 `writeFileSync` 返回 `EPERM`。解决：用 `cmd /c copy` 或编辑器工具写 C 盘路径。（cline环境）
+[ADR-002 Update 6](decisions/ADR-002-project-shape.md)、[investigation-note-vscode-bootstrap-missing.md](decisions/investigation-note-vscode-bootstrap-missing.md)、[handoff-plugin-architecture.md](refs/handoff-plugin-architecture.md)、[dev-rules.md](dev-rules.md)
 
 ---
 
@@ -64,12 +70,10 @@
 然后读 docs/handoff.md，按下面的工作内容继续。
 ```
 
-接续上下文：本会话完成 **Handoff Plugin Phase 2 代码实现**，但 VS Code 扩展 4.0.0 中 Plugin 的 `setup()` 始终不执行。安装了 `_installed/` 和 `installed/` 两个路径，toggle 手动开关也无效。
+接续上下文：本会话完成 **Handoff Plugin Phase 2 全链路验证** + **VS Code 扩展 bootstrap 缺失根因确认** + **VS Code workaround 验证**。Plugin 在 CLI 和 VS Code（workaround）均可运行，7 次 compact 事件全部捕获，双产物正确写入。
 
-**最大转折点**：发现 Plugin Sandbox 不是文件系统沙箱（只是 `node` 子进程），之前\"writeFileSync 被 sandbox 拦截\"是误导。
+**最大转折**：发现 VS Code 扩展 UI 显示 "Installed" ≠ sandbox 激活（Probe 5 V3 过度推断），根因是 esbuild 未输出 bootstrap 文件。
 
 **下次首要动作**：
-1. 搜索确认 VS Code 扩展 4.0.0 是否支持 Plugin 加载（可能需升级或换 CLI）
-2. 用完整路径的 `npm` 重试 `cline plugin install`
-3. 备选：CLI 验证
-
+1. 决策抽取中文化 + index.jsonl file_count 补全
+2. 清理测试产物 + git commit

@@ -945,3 +945,139 @@ Update 3 的核心结论"VS Code 扩展代码层有完整 plugin 注册系统"**
 - ADR-002 §退休条件 / Review Trigger 不变（但建议补充社区活动信号触发器）
 
 本 Update 记录 VS Code 扩展 4.0.0 plugin 装载入口实测 + Marketplace 机制摸清 + Agents Squad handoff store 边界确认，纠正 Update 1 的"VS Code 不可用"错误结论，不构成整体决策推翻。
+
+---
+
+## Update 6 (2026-06-28): VS Code 扩展 plugin sandbox bootstrap 缺失根因确认（修正 Probe 5 V3 / Update 5）
+
+> **方法论**：本 Update 严循 [evidence-governance.md](../evidence-governance.md) 框架。配套 Investigation Note：
+> - [investigation-note-vscode-bootstrap-missing.md](investigation-note-vscode-bootstrap-missing.md) — 完整证据链
+
+### 核查背景
+
+investigation-note-probe-5.md V3 结论"VS Code 扩展**加载并执行**了全局 plugin store 中的 plugin"基于 Customize UI 显示 "Installed" 状态。Update 5 据此宣布 Context §4 硬约束解除、ADR-004 恢复条件 2 满足。但上次会话（handoff.md 记录）发现 Handoff Plugin 的 `setup()` 从未执行——debug log 和 marker 文件均不出现，UI "已加载"与运行时激活之间存在矛盾。本 Update 追查根因。
+
+### 事实变化（4 类独立证据交叉验证）
+
+**事实 1：`plugin-sandbox-bootstrap.js` 不存在于 VS Code 扩展发行包**（实测，高置信度）
+
+- Observation：`find saoudrizwan.claude-dev-4.0.0 -name "plugin-sandbox*"` → 零命中；`find saoudrizwan.claude-dev-4.0.0 -name "bootstrap*"` → 零命中
+- `dist/` 目录仅含 `extension.js`（22.5MB）一个文件，无独立 bootstrap
+- Evidence Type：实测（find 命令）
+- Confidence：高
+
+**事实 2：同一 bootstrap 文件存在于 CLI 发行包**（实测，高置信度）
+
+- Observation：
+  - `@cline/core/dist/extensions/plugin-sandbox-bootstrap.js`（14KB）
+  - `@cline/cli-windows-x64/extensions/plugin-sandbox-bootstrap.js`（14KB）
+- Evidence Type：实测（find 命令）
+- Confidence：高
+
+**事实 3：Plugin sandbox 加载代码在 bundle 中（minified），但 bootstrap 子进程无法启动**（源码分析，高置信度）
+
+- Observation（bundle grep 命中数）：
+  - `plugin-sandbox`：4 处（sandbox spawn、bootstrap 路径解析、debug role）
+  - `registerMessageBuilder`：5 处（API 注册、sandbox 消息转发、stub 回退）
+  - `CLINE_PLUGIN_IMPORT_TIMEOUT_MS`：1 处（超时环境变量）
+  - `loadSandboxedPlugins`：0 处（minified 为 `ivn`）
+  - `SubprocessSandbox`：0 处（minified 为 `Xmn`）
+- Inference：`resolveBootstrap()` 有 5 个候选 `.js` 路径 + jiti fallback → 全部在扩展环境中失败 → fallback 到 `node -e "<jiti script>"` → jiti 被内联在 bundle 中不可 require → 子进程启动失败 → 4000ms 超时 → `setup()` 永不执行
+- Evidence Type：源码（minified bundle + SDK 源码 `plugin-sandbox.ts`）
+- Confidence：高
+
+**事实 4：CLI 3.0.31 中 `setup()` 成功执行**（实测，高置信度）
+
+- Observation（用户执行 `cline -v "list the tools you have available"`，设 `CLINE_PLUGIN_IMPORT_TIMEOUT_MS=30000`）：
+  - `C:\handoff-plugin-debug.log`：`[1] setup() called at 2026-06-28T02:22:57.440Z`
+  - `~/.cline/data/handoff/plugin-loaded.marker`：`loaded at 2026-06-28T02:22:57.451Z`
+  - 时间差 11ms
+- Evidence Type：实测（marker 文件）
+- Confidence：高
+
+### 辅助发现
+
+**ALo 特性门控不是阻塞原因**（源码，高置信度）：
+
+- `ALo(k, "plugins")` → `f0t(t, e)` → `new Set(t ?? ZVu).has(e)`
+- `ZVu = rqi = ["rules", "skills", "workflows", "plugins"]`——默认包含 `"plugins"`
+- 门控通过，plugin 加载代码确实被执行，但 sandbox 子进程启动失败
+
+**GitHub Issue #11065**（CLOSED，2026-05-26）：
+
+- "Plugin sandbox times out at 4000ms on Windows — official example fails to load"
+- 修复：暴露 `CLINE_PLUGIN_IMPORT_TIMEOUT_MS` 环境变量。CLI 实测时已使用此变量（30000ms）
+
+### 根因判定
+
+**VS Code 扩展 4.0.0 的 esbuild 打包流程将 plugin loading 代码（`loadSandboxedPlugins`、`SubprocessSandbox`、`registerMessageBuilder`）内联进了 `dist/extension.js`，但未将 `plugin-sandbox-bootstrap.js` 作为独立文件输出到 `dist/` 目录。**
+
+因果链：`loadSandboxedPlugins()` → `resolveBootstrap()` → 5 个 `.js` 候选路径全部失败 → jiti fallback 失败（jiti 被内联不可 require + `.ts` 源文件不存在）→ sandbox 子进程无法启动 → 4000ms 超时 → `setup()` 永不执行。
+
+CLI 的构建流程正确输出了 bootstrap 文件（`@cline/core/dist/extensions/` + `@cline/cli-windows-x64/extensions/`），因此 CLI 中 plugin 正常工作。
+
+### 对历史 Update / Investigation Note 的修正
+
+| 章节 | 原内容 | Update 6 修正 |
+|------|--------|--------------|
+| investigation-note-probe-5.md V3 | "VS Code 扩展**加载并执行**了全局 plugin store 中的 plugin" | **过度推断**——UI 显示"Installed"仅表示 `discoverPluginModulePaths()` 发现了文件（UI 层发现），不等于 `loadSandboxedPlugins()` 成功启动了 sandbox 子进程（运行时加载）|
+| investigation-note-probe-5.md D2 | "VS Code 不可用硬约束解除" | **回退**——VS Code 扩展因 bootstrap 缺失不可用，仅 CLI 可用 |
+| investigation-note-probe-5.md D3 | "ADR-004 恢复条件 2 满足" | **需重新评估**——VS Code 扩展路径不可用，仅 CLI 路径可用 |
+| Update 5 Context §4 | "v4.0.0 实测可用（Customize 按钮 marketplace 安装），硬约束解除" | **部分回退**——Customize UI 可发现 plugin（UI 层），但 sandbox 无法启动（运行时层）。硬约束从"完全不可用"修正为"UI 可发现但运行时不可用" |
+| Update 5 ADR-004 | "恢复条件 2 满足——#5 不再依赖 CLI 载体" | **回退**——#5 仍依赖 CLI 载体（VS Code 扩展 bootstrap 缺失）|
+
+### VS Code Workaround 验证（2026-06-28，实测通过）
+
+步骤：
+1. 复制 `plugin-sandbox-bootstrap.js`（从 CLI `@cline/core/dist/extensions/`）到扩展 `dist/extensions/`
+2. 复制 `@cline/shared`、`@cline/core`、`jiti` 包到扩展 `node_modules/`
+3. `setx CLINE_PLUGIN_IMPORT_TIMEOUT_MS 30000`
+4. Reload VS Code window
+
+结果：`setup()` 成功执行，Phase 2 全链路 7 次 compact 事件均捕获，handoff.md + index.jsonl 双产物正确写入。
+
+**对 Update 6 前述修正的影响**：workaround 使 VS Code 扩展可用，但依赖非官方补丁。mechanism-candidates #5 状态更新为"实验中（CLI 3.0.31 + VS Code workaround）"。
+
+### 核心命题翻转审查（dev-rules.md §1.10 触发）
+
+"VS Code 扩展是否支持 Plugin"核心命题翻转历史：
+
+| 时间点 | 命题 | 依据 |
+|--------|------|------|
+| ADR-002 Context §4（2026-06-23）| 不支持 | 官方文档 "not applicable for now" |
+| Probe 5 / Update 5（2026-06-27）| 支持 | Customize UI 显示 "Installed" |
+| 本调查 / Update 6（2026-06-28）| **不支持**（运行时层）| bootstrap 文件缺失 + CLI 对照成功 |
+
+翻转 3 次（不支持→支持→不支持），触发 §1.10 工作流审查。
+
+**审查结果**：
+- 违反 §1.8 Evidence Collapse？否——Probe 5 从 UI 观察（实测证据类型）直接跳到"支持"结论，未与官方文档（"not applicable"）和源码（bootstrap 缺失）做交叉验证
+- 违反 evidence-governance.md §2.3 禁止跳级？是——Probe 5 V3 从 Observation（UI 显示 Installed）直接到 Decision（硬约束解除），跳过了 Hypothesis（UI 发现是否等于运行时激活？）和 Verified（setup() 是否真正执行？）
+- **处置**：本次 Update 补齐了缺失的 Verified 层（CLI 对照实测 + bootstrap 缺失确认），修正了跳级结论
+
+### Remaining Unknown
+
+1. ~~手动复制 bootstrap 后依赖解析~~ → Workaround 验证已确认正常
+2. ~~`CLINE_WRAPPER_PATH` 环境变量~~ → 未测试，workaround 方案已替代
+3. Cline 官方是否计划修复（Issue #11065 仅涉及超时，未涉及 bootstrap 缺失）
+4. ~~CLI 中 `build()` / `registerMessageBuilder` 是否在 compact 事件时被实际调用~~ → Phase 2 全链路验证确认（7 次 compact 事件）
+
+### 后续动作
+
+1. ~~**CLI 验证 build()**~~ → 已完成（Phase 2 全链路 7 次 compact 事件）
+2. ~~**VS Code workaround 实验**~~ → 已完成（Workaround 验证通过）
+3. ~~**mechanism-candidates #5 状态更新**~~ → 已更新为"实验中"
+4. ~~**investigation-note-probe-5.md 修正标注**~~ → 已追加 V3/D2/D3 纠正标注
+5. **决策抽取中文化**：`generateHandoffContent` 仅匹配英文关键字
+6. **index.jsonl file_count**：`file_count: 0` 硬编码待修正
+7. **测试产物清理** + **Git commit**
+
+### 本 Update 不变更的内容
+
+- ADR-002 整体方向（薄 Skills + 单点 WebSearch MCP + 经验文档 + Plugin 实验线）不变
+- ADR-002 status 仍为 active
+- Plugin 代码正确性不变（CLI + VS Code workaround 均验证通过）
+- mechanism-candidates #5 的命题（compact 双产物 via registerMessageBuilder）不变
+- ADR-002 §退休条件 / Review Trigger 不变
+
+本 Update 记录 VS Code 扩展 4.0.0 plugin sandbox bootstrap 缺失根因确认 + Workaround 验证 + Phase 2 全链路验证通过，修正 Probe 5 V3 / Update 5 的过度推断，不构成整体决策推翻。
