@@ -26,7 +26,7 @@ Cline 自身没有内置 web search，依赖外部 MCP（默认 DuckDuckGo）。
 
 其中绝大多数可以靠提示词补齐——不需要新依赖、不需要 API key、不需要换后端。这一判断驱动了整个项目的设计方向：把商业 agent 搜索栈的工程动作**转译**为 Cline + DDG MCP 栈上的提示词层机制。
 
-完整对照表见仓库 `docs/research/01-background.md`：12 项商业 agent 手法中，5 项可提示词等效、5 项部分覆盖、2 项不可（必须由 LLM 自身承担或换后端）。
+完整对照表见仓库 `docs/search/research/01-background.md`：12 项商业 agent 手法中，5 项可提示词等效、5 项部分覆盖、2 项不可（必须由 LLM 自身承担或换后端）。
 
 ---
 
@@ -248,7 +248,7 @@ npm test  # 11/11 通过
 | #21 多样性排序 | LLM 算术不准 + 4 倍方差压缩 | NumericBench arXiv'25 / LLM-as-a-Judge |
 | #22 Browser Fetch | headless 是地基不是整栋楼 | Browserless / Scrapfly stealth |
 
-完整文献清单见仓库 `docs/research/references.md`。
+完整文献清单见仓库 `docs/search/research/references.md`。
 
 ---
 
@@ -268,10 +268,10 @@ npm test  # 11/11 通过
 
 | 顺序 | 文件 | 主题 |
 |------|------|------|
-| 1 | `docs/research/00-overview.md` | 摘要 + 问题 + 主要结论（如果只读一份，读这份） |
-| 2 | `docs/research/02-methodology.md` | A/B 双盲框架 + 评分阈值体系 |
-| 3 | `docs/research/03-mechanisms.md` | 6 active + #24 wrapper + 证伪路径详解 |
-| 4 | `docs/research/06-usage.md` | 如何在 Cline 中应用 |
+| 1 | `docs/search/research/00-overview.md` | 摘要 + 问题 + 主要结论（如果只读一份，读这份） |
+| 2 | `docs/search/research/02-methodology.md` | A/B 双盲框架 + 评分阈值体系 |
+| 3 | `docs/search/research/03-mechanisms.md` | 6 active + #24 wrapper + 证伪路径详解 |
+| 4 | `docs/search/research/06-usage.md` | 如何在 Cline 中应用 |
 
 仓库地址再放一次：
 

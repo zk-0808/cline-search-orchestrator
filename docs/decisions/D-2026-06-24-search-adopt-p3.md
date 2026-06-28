@@ -6,15 +6,15 @@ status: active
 supersedes: []
 superseded_by: []
 evidence:
-  - file: search-orchestrator/experiments/run-5-p3-retry.md
+  - file: search/search-orchestrator/experiments/run-5-p3-retry.md
     section: "全文"
-  - file: search-orchestrator/experiments/run-6-p3-zh-retry.md
+  - file: search/search-orchestrator/experiments/run-6-p3-zh-retry.md
     section: "全文"
-  - file: search-orchestrator/experiments/run-4-p3-evidence-bound-citation.md
+  - file: search/search-orchestrator/experiments/run-4-p3-evidence-bound-citation.md
     section: "全文"
-  - file: search-orchestrator/survey.md
+  - file: search/search-orchestrator/survey.md
     section: "2. M8 Citation 强制"
-  - file: search-orchestrator/survey.md
+  - file: search/search-orchestrator/survey.md
     section: "4. 启示 2：Citation 架构强制（中 ROI）"
 ---
 

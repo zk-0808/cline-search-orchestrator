@@ -6,7 +6,7 @@ status: active
 supersedes: []
 superseded_by: []
 evidence:
-  - file: search-orchestrator/experiments/run-7-p4-dedup.md
+  - file: search/search-orchestrator/experiments/run-7-p4-dedup.md
     section: "核心指标 / 多样性变化分析"
 ---
 

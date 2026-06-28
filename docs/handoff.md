@@ -66,7 +66,7 @@ CLI 构建正确输出了 bootstrap（`@cline/core/dist/extensions/`），因此
 ## Handoff（下次会话第一句话建议）
 
 ```text
-先读 docs/dev-rules.md（注意 §1.5-§1.14 执行门控）与 docs/project-rules-search-orchestrator.md 各一次，遵守三份文档职责划分与防漂移约束。
+先读 docs/dev-rules.md（注意 §1.5-§1.14 执行门控）与 docs/search/project-rules.md 各一次，遵守三份文档职责划分与防漂移约束。
 然后读 docs/handoff.md，按下面的工作内容继续。
 ```
 

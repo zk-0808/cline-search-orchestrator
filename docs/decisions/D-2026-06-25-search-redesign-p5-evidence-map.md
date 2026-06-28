@@ -7,17 +7,17 @@ supersedes:
   - D-2026-06-24-search-evaluate-p5-output-schema
 superseded_by: []
 evidence:
-  - file: search-orchestrator/experiments/run-9c-p5-output-schema-v3.md
+  - file: search/search-orchestrator/experiments/run-9c-p5-output-schema-v3.md
     section: "§5.6 评分理由"
-  - file: search-orchestrator/experiments/run-9c-p5-output-schema-v3.md
+  - file: search/search-orchestrator/experiments/run-9c-p5-output-schema-v3.md
     section: "§5.7 决策"
   - file: decisions/D-2026-06-24-search-evaluate-p5-output-schema.md
     section: "Q2：P5 机制是什么"
-  - file: search-orchestrator/survey.md
+  - file: search/search-orchestrator/survey.md
     section: "§9.3 最终路线状态"
   - file: mechanism-candidates.md
     section: "条目 16：Output Schema 结构化抽取"
-  - file: search-orchestrator/experiments/run-13-p5-evidence-map.md
+  - file: search/search-orchestrator/experiments/run-13-p5-evidence-map.md
     section: "§1 重设计假设"
 ---
 

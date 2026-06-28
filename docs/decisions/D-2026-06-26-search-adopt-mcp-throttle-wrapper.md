@@ -8,9 +8,9 @@ superseded_by: []
 evidence:
   - file: mechanism-candidates.md
     section: "#24 搜索 MCP 自适应反-bot 节流 / 退避"
-  - file: search-orchestrator/experiments/run-14-p5-gap-ledger.md
+  - file: search/search-orchestrator/experiments/run-14-p5-gap-ledger.md
     section: "Phase 0b DDG BOT_DETECTED 运行时故障"
-  - file: search-orchestrator/experiments/run-14-phase0-evidence.md
+  - file: search/search-orchestrator/experiments/run-14-phase0-evidence.md
     section: "§3 反证不足汇总 — DDG bot detection 根本原因"
   - file: skills/search-orchestrator/references/web-search-setup.md
     section: "§七 与本项目 search-orchestrator Skill 的关系"

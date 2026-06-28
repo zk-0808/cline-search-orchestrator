@@ -2,7 +2,7 @@
 
 > **范围**：与具体功能无关的**永久**治理规则。不随某一功能开发期结束而删除。
 >
-> **与功能专属 `project-rules-<功能>.md` 的区别**：功能专属规则（如 `project-rules-search-orchestrator.md`）只在该功能开发期生效，绑定其 `survey.md §9` 的决策/实验/路线表，功能冻结后整体删除；本文件承载**跨功能复用**的执行边界、验证方法论与状态值约定，长期保留。
+> **与功能专属 `project-rules-<功能>.md` 的区别**：功能专属规则（如 `search/project-rules.md`）只在该功能开发期生效，绑定其 `survey.md §9` 的决策/实验/路线表，功能冻结后整体删除；本文件承载**跨功能复用**的执行边界、验证方法论与状态值约定，长期保留。
 >
 > **加载方式**：本文件**不**通过 `.trae/rules/` 自动注入到系统提示词。新会话开始时由用户在第一句话提醒模型阅读。
 >
@@ -210,7 +210,7 @@ minified 代码**可用于定位**（入口 / 调用链 / 字符串 / API / hook
 
 下"无 X"类结论（无开发记录 / 无社区沉淀 / 无可用工具 / 无文档 / 无示例）前，**必须**：
 
-1. 经 search-orchestrator SKILL 反证查询（如适用，按 [project-rules-search-orchestrator.md](project-rules-search-orchestrator.md)）
+1. 经 search-orchestrator SKILL 反证查询（如适用，按 [search/project-rules.md](search/project-rules.md)）
 2. 至少 **3 类独立证据类型**一致（如 npm + GitHub + 官方文档 + Marketplace + 搜索引擎）
 3. 在 Investigation Note（[evidence-governance.md §10](evidence-governance.md)）中记录反证搜索过程，含 query 列表（[evidence-governance.md §17](evidence-governance.md)）
 
@@ -289,9 +289,14 @@ minified 代码**可用于定位**（入口 / 调用链 / 字符串 / API / hook
 ```
 docs/                     项目文档
   decisions/              ADR + 调查笔记（Investigation Notes）
-  refs/                   架构参考 + 社区指南（对外可发布）
-  research/               搜索质量研究
-  search-orchestrator/    搜索编排器文档 + 实验记录
+  search/                 搜索产品线
+    search-orchestrator/  搜索编排器文档 + 实验记录
+    research/             搜索质量研究
+    blog/                 社区博文
+    project-rules.md      search-orchestrator 开发期防漂移约束
+  plugin/                 Plugin 产品线
+    design.md             handoff-plugin 设计文档
+    refs/                 架构参考 + 社区指南（对外可发布）
 scripts/                  工具脚本（patch、自动化）
 handoff-plugin/           Plugin 源码（独立 git 仓库）
 search-mcp-wrapper/       MCP wrapper（独立项目）
@@ -300,7 +305,7 @@ experiments/              Spike 实验
 ```
 
 **判定规则**：
-- 对外可发布的指南/参考 → `docs/refs/`
+- 对外可发布的指南/参考 → `docs/plugin/refs/`
 - 内部决策记录（ADR / 调查笔记）→ `docs/decisions/`
 - 可执行脚本（.ps1 / .sh / .py 工具）→ `scripts/`
 - 运行时日志（.log）→ gitignore，不入库

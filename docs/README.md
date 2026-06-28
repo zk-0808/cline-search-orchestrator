@@ -9,22 +9,20 @@ docs/
 ├── README.md                     ← 本文件
 ├── PROJECT_DEV_OUTLINE.md        全局工程纪律（A/B/C 分类 / 五问门控 / 停止条件 / 协作流程）
 ├── dev-rules.md                  跨功能通用防漂移规则（执行边界 / handoff 通用触发器 / 状态值约定，永久保留）
-├── project-rules-search-orchestrator.md  search-orchestrator 开发期防漂移约束（功能冻结后删除）
+├── search/                         search-orchestrator 功能文档
+│   ├── project-rules.md            search-orchestrator 开发期防漂移约束（功能冻结后删除）
+│   ├── blog/                       博客文章
+│   ├── research/                   搜索质量研究
+│   └── search-orchestrator/        搜索编排器文档 + 实验记录
+│
+├── plugin/                         Plugin 相关文档
+│   ├── design.md                   设计文档
+│   └── refs/                       全局参考（不属任何功能）
 ├── handoff.md                    会话快照（本会话决策 / 净变化 / 下次第一句话）
 ├── mechanism-candidates.md       经验机制化清单（A 类未来代码化的候选）
 │
 ├── decisions/                    所有决策：ADR-*（战略）+ D-*（运营）
 │   └── README.md                 决策索引表
-│
-├── search-orchestrator/          功能 1：搜索编排
-│   ├── README.md                 主题状态总览
-│   ├── survey.md                 调研报告（§1–§8 事实层 + §9 Decision Outcome 跳转）
-│   ├── search-research-results.md 调研原始证据
-│   └── experiments/              A/B 实验数据
-│
-└── refs/                         全局参考（不属任何功能）
-    ├── capability-probe.md
-    └── plugin-dev-quick-reference.md
 ```
 
 ## 核心约定
@@ -69,7 +67,7 @@ evidence:
 |------|------|
 | 看项目工程纪律 | [PROJECT_DEV_OUTLINE.md](PROJECT_DEV_OUTLINE.md) |
 | 看跨功能通用防漂移规则 | [dev-rules.md](dev-rules.md) |
-| 看 search-orchestrator 开发期约束 | [project-rules-search-orchestrator.md](project-rules-search-orchestrator.md) |
+| 看 search-orchestrator 开发期约束 | [search/project-rules.md](search/project-rules.md) |
 | 看所有决策时间线 | [decisions/README.md](decisions/README.md) |
 | 看搜索编排主题状态 | [search-orchestrator/README.md](search-orchestrator/README.md) |
 | 看待机制化的 A 类清单 | [mechanism-candidates.md](mechanism-candidates.md) |

@@ -7,15 +7,15 @@ supersedes: []
 superseded_by:
   - D-2026-06-25-search-redesign-p5-evidence-map
 evidence:
-  - file: search-orchestrator/survey.md
+  - file: search/search-orchestrator/survey.md
     section: "M5 结构化输出 / Output Schema（L49-54）"
-  - file: search-orchestrator/survey.md
+  - file: search/search-orchestrator/survey.md
     section: "§9.3 最终路线状态 P5/P6（V2）：候选"
   - file: mechanism-candidates.md
     section: "条目 16 Output Schema 结构化抽取"
   - file: mechanism-candidates.md
     section: "条目 17 Highlights / Relevance Compression"
-  - file: search-orchestrator/experiments/run-8a-mcp-backend.md
+  - file: search/search-orchestrator/experiments/run-8a-mcp-backend.md
     section: "Run #8a 结论：基础设施层边际收益急剧下降"
   - file: decisions/D-2026-06-24-search-infra-mcp-upgrade.md
     section: "回滚动作 / 待 V2 路线决策"

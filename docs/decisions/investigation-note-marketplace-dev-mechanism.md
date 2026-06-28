@@ -87,7 +87,7 @@ VS Code 扩展（4.0.0）
 ### 2. "无开发记录"结论彻底证伪（C 主证，A/D 辅证）
 
 **原结论 5 处出处**：
-- `docs/refs/plugin-dev-quick-reference.md` §0（2026-06-23）+ 第 272 行
+- `docs/plugin/refs/plugin-dev-quick-reference.md` §0（2026-06-23）+ 第 272 行
 - `docs/decisions/ADR-002-project-shape.md` Context §5（第 29 行）+ Update 1（第 392 行）
 - `docs/decisions/ADR-002-p5-experiment-exit-review.md` §2.4（第 77 行）
 

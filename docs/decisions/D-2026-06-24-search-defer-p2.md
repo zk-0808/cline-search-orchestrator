@@ -6,13 +6,13 @@ status: deferred
 supersedes: []
 superseded_by: []
 evidence:
-  - file: search-orchestrator/survey.md
+  - file: search/search-orchestrator/survey.md
     section: "10.5 Run #2 —— P2 Query Rewrite + Fanout 首轮验证"
-  - file: search-orchestrator/survey.md
+  - file: search/search-orchestrator/survey.md
     section: "10.6 Run #3 —— P2 调参后复测"
-  - file: search-orchestrator/survey.md
+  - file: search/search-orchestrator/survey.md
     section: "10.7 P2 收敛决策"
-  - file: search-orchestrator/experiments/run-3-fanout-tuned.md
+  - file: search/search-orchestrator/experiments/run-3-fanout-tuned.md
     section: "决策"
   - file: decisions/D-2026-06-24-search-rollback-diversity.md
     section: "三条 C 类教训"

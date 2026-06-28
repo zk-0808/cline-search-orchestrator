@@ -6,7 +6,7 @@ status: active
 supersedes: []
 superseded_by: []
 evidence:
-  - file: search-orchestrator/experiments/run-7-p4-dedup.md
+  - file: search/search-orchestrator/experiments/run-7-p4-dedup.md
     section: "全文"
   - file: mechanism-candidates.md
     section: "条目 19：同源转载证据去重"

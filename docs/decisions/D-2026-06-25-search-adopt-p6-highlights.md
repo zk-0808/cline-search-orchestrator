@@ -6,9 +6,9 @@ status: active
 supersedes: []
 superseded_by: []
 evidence:
-  - file: search-orchestrator/experiments/run-10-p6-highlights.md
+  - file: search/search-orchestrator/experiments/run-10-p6-highlights.md
     section: "§5 结果记录区"
-  - file: search-orchestrator/experiments/run-10-output.md
+  - file: search/search-orchestrator/experiments/run-10-output.md
     section: "全文"
   - file: mechanism-candidates.md
     section: "条目 17：Highlights / Relevance Compression"

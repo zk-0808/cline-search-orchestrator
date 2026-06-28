@@ -6,13 +6,13 @@ status: active
 supersedes: []
 superseded_by: []
 evidence:
-  - file: search-orchestrator/survey.md
+  - file: search/search-orchestrator/survey.md
     section: "2. M6 域名级 ranking 控制（Goggles）"
-  - file: search-orchestrator/survey.md
+  - file: search/search-orchestrator/survey.md
     section: "4. 启示 1：把 Goggles 思想搬到提示词（高 ROI）"
-  - file: search-orchestrator/survey.md
+  - file: search/search-orchestrator/survey.md
     section: "9.2 最终落地优先级"
-  - file: search-orchestrator/experiments/run-1-goggle.md
+  - file: search/search-orchestrator/experiments/run-1-goggle.md
     section: "全文"
 ---
 

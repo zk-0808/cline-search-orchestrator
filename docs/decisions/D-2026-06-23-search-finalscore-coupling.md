@@ -6,11 +6,11 @@ status: active
 supersedes: []
 superseded_by: []
 evidence:
-  - file: search-orchestrator/survey.md
+  - file: search/search-orchestrator/survey.md
     section: "10.2 第二轮 GPT 评审与 P1.5 联动"
-  - file: search-orchestrator/survey.md
+  - file: search/search-orchestrator/survey.md
     section: "10.3 联动后的预期效果（基于 Run #1 数据回算）"
-  - file: search-orchestrator/experiments/run-1-goggle.md
+  - file: search/search-orchestrator/experiments/run-1-goggle.md
     section: "全文"
 ---
 

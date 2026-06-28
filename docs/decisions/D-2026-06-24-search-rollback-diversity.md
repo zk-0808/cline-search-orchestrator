@@ -6,13 +6,13 @@ status: rolled-back
 supersedes: []
 superseded_by: []
 evidence:
-  - file: search-orchestrator/experiments/run-3-fanout-tuned.md
+  - file: search/search-orchestrator/experiments/run-3-fanout-tuned.md
     section: "指标计算"
-  - file: search-orchestrator/experiments/run-3-fanout-tuned.md
+  - file: search/search-orchestrator/experiments/run-3-fanout-tuned.md
     section: "决策"
-  - file: search-orchestrator/survey.md
+  - file: search/search-orchestrator/survey.md
     section: "10.6 Run #3 —— P2 调参后复测"
-  - file: search-orchestrator/survey.md
+  - file: search/search-orchestrator/survey.md
     section: "10.7 P2 收敛决策"
   - file: mechanism-candidates.md
     section: "条目 21：多样性排序机制"

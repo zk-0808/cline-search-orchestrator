@@ -6,15 +6,15 @@ status: rolled-back
 supersedes: []
 superseded_by: []
 evidence:
-  - file: search-orchestrator/experiments/run-4-p3-evidence-bound-citation.md
+  - file: search/search-orchestrator/experiments/run-4-p3-evidence-bound-citation.md
     section: "fetch 成功率"
-  - file: search-orchestrator/experiments/run-6-p3-zh-retry.md
+  - file: search/search-orchestrator/experiments/run-6-p3-zh-retry.md
     section: "fetch 成功率"
-  - file: search-orchestrator/experiments/run-8a-mcp-backend.md
+  - file: search/search-orchestrator/experiments/run-8a-mcp-backend.md
     section: "结果记录"
   - file: decisions/D-2026-06-24-search-adopt-p3.md
     section: "对路线图的隐含影响"
-  - file: search-orchestrator/references/web-search-setup.md
+  - file: search/search-orchestrator/references/web-search-setup.md
     section: "推荐方案 / 备选方案"
 ---
 
@@ -22,7 +22,7 @@ evidence:
 
 ## ⚠️ 状态：rolled-back（2026-06-24 当日否决）
 
-**Run #8a 实测否决了本决策的核心假设。** 详见文末「Run #8a 验证结果」与 [experiments/run-8a-mcp-backend.md](../search-orchestrator/experiments/run-8a-mcp-backend.md)。
+**Run #8a 实测否决了本决策的核心假设。** 详见文末「Run #8a 验证结果」与 [experiments/run-8a-mcp-backend.md](../search/search-orchestrator/experiments/run-8a-mcp-backend.md)。
 
 简要：将 MCP 后端切换为 Python `curl_cffi auto`（Chrome TLS 指纹模拟）后，10 个中文 URL 的 fetch 覆盖率 = **0/10**（与 Node.js 基线持平），预测 7~8/10 完全落空。原假设「TLS 指纹是中文 fetch 失败的主因」被否决。
 
