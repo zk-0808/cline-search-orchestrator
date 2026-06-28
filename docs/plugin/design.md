@@ -193,15 +193,33 @@ schema 定义：
 
 ```
 handoff-plugin/
-├── package.json             ← manifest（声明 messageBuilders capabilities）
+├── package.json             ← manifest（声明 messageBuilders + rules + hooks capabilities）
 ├── src/
-│   ├── index.ts             ← plugin 入口（AgentPlugin 导出）
-│   ├── compaction.ts        ← 消息压缩逻辑（基于 custom-compaction.ts）
-│   ├── handoff-writer.ts    ← handoff.md 生成
-│   ├── index-writer.ts      ← index.jsonl 追加
+│   ├── index.ts             ← plugin 入口 + setup() 注册三类能力
+│   ├── compaction.ts        ← 消息压缩逻辑（基于 custom-compaction.ts，保留给 compact-observer）
+│   ├── tool-recorder.ts     ← 统一工具调用记录器（beforeTool/afterTool 数据源）
+│   ├── rules-injector.ts    ← handoff.md 动态注入（rules.content 函数）
 │   └── types.ts             ← 类型定义
 └── README.md
 ```
+
+### 4.2 模块职责
+
+| 模块 | 职责 | Cline 能力 | 对应候选 |
+|------|------|-----------|----------|
+| `compact-observer` | 观察 compact 事件，仅日志记录，**不写 handoff** | messageBuilders | #5 |
+| `rules-injector` | 动态读取最新 handoff.md 注入新会话 rules | rules | #6 |
+| `tool-recorder` | 统一采集工具调用 (name, args, duration, success, timestamp) | hooks (beforeTool + afterTool) | #1 + #4 |
+| `compaction.ts` | token 估算 + shouldCompact 判定（保留，供 compact-observer 使用） | — | — |
+
+### 4.3 文件命名规范
+
+handoff 文件名格式：`{project_hash}-{timestamp}-{uuid}.md`
+- `project_hash`：工作区路径 SHA256 前 4 字符，防止跨项目串味
+- `timestamp`：ISO 8601 精确到秒（文件名安全字符）
+- `uuid`：6 位随机字符，防并发冲突
+
+`findLatestHandoff()` 按 project hash + 最近 mtime 选取。
 
 ### 4.2 集成点
 
